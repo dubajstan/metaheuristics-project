@@ -47,7 +47,7 @@ class Bees:
 
             if best_current_cost < self.best_cost:
                 self.best_cost = best_current_cost
-                self.best_solution = best_current[:] #kopia
+                self.best_solution = best_current[:] #kopia zamiast ref
 
             elite = population[:self.n_elite]
             best = population[self.n_elite:self.n_best]
@@ -75,4 +75,5 @@ class Bees:
             population=new_population
 
         return self.best_solution, self.best_cost
+
 
