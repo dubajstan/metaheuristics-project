@@ -6,7 +6,7 @@ import numpy as np
 
 class TSPProblem(Problem):
     def __init__(self, file_path: Path | str, seed: int = 42):
-        super().__init__()
+        super().__init__(seed)
         file_path = Path(file_path)
         self.tsplib_problem = tsplib95.load(file_path) # parsuje problem z pliku
         self._raw_nodes = list(self.tsplib_problem.get_nodes())
@@ -15,7 +15,6 @@ class TSPProblem(Problem):
         self.start_node = 0        
         self._distance_matrix = self._build_distance_matrix()
         np.fill_diagonal(self._distance_matrix, 0.0)
-        self.rng = np.random.default_rng(seed)
 
 
     def _build_distance_matrix(self) -> np.ndarray:
@@ -41,15 +40,18 @@ class TSPProblem(Problem):
 
     def create_random_solution(self) -> np.ndarray:
         """Generates valid initial tour starting from start_node"""
-        cities = np.copy(self.nodes)
-        self.rng.shuffle(cities)
-        return cities
+        full_tour = np.zeros(self.num_cities, dtype=np.int32)
+        full_tour[0] = self.start_node
+        internal_cities = np.copy(self.nodes[1:])
+        self.rng.shuffle(internal_cities)
+        full_tour[1:] = internal_cities
+        return full_tour
     
 
     def get_neighbour(self, solution: np.ndarray | list[int]) -> np.ndarray:
         """Returns a neighbour by swapping two random cities with each other"""
         neighbour = np.copy(solution)
-        idx1, idx2 = self.rng.choice(len(neighbour), size=2, replace=False)
+        idx1, idx2 = self.rng.choice(range(1, len(neighbour)), size=2, replace=False)
         neighbour[idx1], neighbour[idx2] = neighbour[idx2], neighbour[idx1]
         return neighbour
     
