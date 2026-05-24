@@ -61,7 +61,7 @@ class TSPProblem(Problem):
     @property
     def cities(self) -> np.ndarray:
         """Returns all cities including start node"""
-        return self.nodes
+        return self.nodes.copy()
 
     @property
     def distance_matrix(self) -> np.ndarray:
