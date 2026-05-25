@@ -6,6 +6,7 @@ class Problem(ABC):
     def __init__(self, seed: int = 42):
         self.fe_count = 0 # klasa problem automatycznie bedzie sledzic ile razy zostal obliczony fitness/cost
         self.rng = np.random.default_rng(seed)
+        self.seed = seed
 
     
     def evaluate(self, solution) -> float:

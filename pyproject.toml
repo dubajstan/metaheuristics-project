@@ -8,6 +8,8 @@ dependencies = [
     "matplotlib>=3.10.8",
     "numpy>=2.4.4",
     "pandas>=3.0.2",
+    "seaborn>=0.13.2",
+    "tsplib95>=0.7.1",
 ]
 
 [dependency-groups]
