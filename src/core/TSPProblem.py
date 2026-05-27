@@ -1,4 +1,4 @@
-from Problem import Problem
+from core.Problem import Problem
 import tsplib95
 from pathlib import Path
 import numpy as np
