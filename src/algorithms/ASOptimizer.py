@@ -3,9 +3,9 @@ from algorithms.ASHyperparameters import ASHyperparameters
 import numpy as np
 
 
-class AntOptimizer:
+class ASOptimizer:
 
-    def __init__(self, problem: TSPProblem, max_fes: int, config: ASHyperparameters):
+    def __init__(self, problem: TSPProblem, max_fes: int, hyperparameters: ASHyperparameters):
         
         #general
         self.problem = problem
@@ -15,13 +15,15 @@ class AntOptimizer:
         self.rng = problem.rng
         self.exec_time = 0
 
+        self.problem.fe_count = 0
+
         #ant system specific
-        self.m = config.m
-        self.c = config.c
-        self.p = config.p
-        self.q = config.q
-        self.alpha = config.alpha
-        self.beta = config.beta
+        self.m = hyperparameters.m
+        self.c = hyperparameters.c
+        self.p = hyperparameters.p
+        self.q = hyperparameters.q
+        self.alpha = hyperparameters.alpha
+        self.beta = hyperparameters.beta
         self.tabu_lists = [[] for _ in range(self.m)]
         self.tabu_masks = np.ones((self.m, self.dimension), dtype = bool)
         self.distances = problem.distance_matrix
@@ -30,6 +32,7 @@ class AntOptimizer:
         self.visibilities[non_zero_distances_mask] = 1.0 / self.distances[non_zero_distances_mask]
         self.taus = np.full((self.dimension, self.dimension), self.c)
         self.delta_taus = np.zeros_like(self.taus)
+        self.fes_total_count = 0
 
 
 
@@ -112,6 +115,8 @@ class AntOptimizer:
         self.run_cycle()
 
         while not self.problem.fe_count > self.max_fes:
+
+            self.fes_total_count = self.problem.fe_count
                 
             costs = [self.problem.evaluate(route) for route in self.tabu_lists]
 

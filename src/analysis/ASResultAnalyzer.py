@@ -1,14 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 from pathlib import Path
+from algorithms.ASOptimizer import ASOptimizer
 
-class AntResultAnalyzer:
+class ASResultAnalyzer:
 
-    def __init__(self, history: list[tuple], target_path: Path | str, series_name: str = "series") -> None:
+    def __init__(self, optimizer: ASOptimizer, target_path: Path | str, exec_time: float,series_name: str = 'series') -> None:
         '''
-        Initializes the analyzer with a target directory and loads the first data series.
+        Initializes the analyzer with a target directory and loads data directly from an ASOptimizer instance.
         '''
-        self.target_path = Path(target_path) / f'ants-{series_name}'
+        self.target_path = Path(target_path) / f'{series_name}'
         self.target_path.mkdir(parents=True, exist_ok=True)
         
         self.history = []
@@ -16,21 +18,39 @@ class AntResultAnalyzer:
         self.best_cost = float('inf')
         self.best_solution = None
         self.cycles = []
+        self.fes_count = 0
         self.best_costs_per_cycle = []
         self.avg_costs_per_cycle = []
         self.std_costs_per_cycle = []
         
-        self.load_series(history, series_name)
+        self.exec_time = 0.0
+        self.hyperparameters = {}
+        self.problem_name = "unknown"
+        
+        self.load_series(optimizer, exec_time, series_name)
 
-    def load_series(self, history: list[tuple], series_name: str = None) -> None:
+    def load_series(self, optimizer: ASOptimizer, exec_time: float, series_name: str = 'series') -> None:
         '''
-        Repeats the initialization process for a new history series using the existing target path.
-        Optionally updates the series name.
+        Extracts history, execution time, hyperparameters, and problem name from the optimizer object.
         '''
-        if not history:
-            raise ValueError("History data cannot be empty.")
+        if not optimizer.history:
+            raise ValueError("Optimizer history data cannot be empty.")
             
-        self.history = history
+        self.history = optimizer.history
+        self.exec_time = exec_time
+        
+        self.hyperparameters = {
+            "m": optimizer.m,
+            "c": optimizer.c,
+            "p": optimizer.p,
+            "q": optimizer.q,
+            "alpha": optimizer.alpha,
+            "beta": optimizer.beta
+        }
+            
+        self.problem_name = Path(optimizer.problem.file_path).name
+ 
+            
         if series_name is not None:
             self.series_name = series_name
             
@@ -39,6 +59,7 @@ class AntResultAnalyzer:
         self.best_solution = last_record[0][1]
         
         self.cycles = list(range(1, len(self.history) + 1))
+        self.fes_count = optimizer.fes_total_count
         
         self.best_costs_per_cycle = [record[0][0] for record in self.history]
         self.avg_costs_per_cycle = [np.mean(record[1]) for record in self.history]
@@ -79,7 +100,6 @@ class AntResultAnalyzer:
         plt.figure(figsize=(10, 6))
         
         plt.plot(self.cycles, self.avg_costs_per_cycle, label='Average Cost', color='blue', linewidth=2, marker='o')
-        
         plt.plot(self.cycles, self.best_costs_per_cycle, label='Current Best Cost', color='green', linestyle='--', linewidth=1.5, marker='o')
         
         plt.title(f'Average Population Cost - {self.series_name}')
@@ -92,9 +112,34 @@ class AntResultAnalyzer:
         plt.savefig(save_path)
         plt.show()
         plt.close()
+
+    def save_results_json(self) -> None:
+        '''Saves the execution summary (problem name, hyperparameters, best cost, best solution, execution time and cycles number) to a JSON file.'''
+        save_path = self.target_path / f'{self.series_name}_result.json'
+        
+        solution_data = self.best_solution
+        if hasattr(solution_data, 'tolist'):
+            solution_data = solution_data.tolist()
+        elif isinstance(solution_data, (np.ndarray, list)):
+            solution_data = [int(node) for node in solution_data]
+
+        results = {
+            'problem_name': self.problem_name,
+            'series_name': self.series_name,
+            'hyperparameters': self.hyperparameters,
+            'execution_time_seconds': self.exec_time,
+            'total_fes': self.fes_count,
+            'cycles': len(self.cycles),
+            'best_cost': self.best_cost,
+            'best_solution': solution_data,
+        }
+        
+        with open(save_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=4)
         
     def plot_all_and_save(self) -> None:
-        '''Helper method to automatically generate and save all available plots.'''
+        '''Helper method to automatically generate and save all available plots and data metrics.'''
         self.plot_best_cost()
         self.plot_cost_std_dev()
         self.plot_average_cost()
+        self.save_results_json()

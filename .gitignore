@@ -218,5 +218,5 @@ __marimo__/
 
 .env
 
-# Charts
-charts/
+# Results
+results/

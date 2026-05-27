@@ -1,34 +1,37 @@
 from core.TSPProblem import TSPProblem
-from algorithms.AntOptimizer import AntOptimizer
+from algorithms.ASOptimizer import ASOptimizer
 from algorithms.ASHyperparameters import ASHyperparameters
-from analysis.AntResultAnalyzer import AntResultAnalyzer
+from analysis.ASResultAnalyzer import ASResultAnalyzer
+from algorithms.ASTuner import ASTuner
 from pathlib import Path
 import time
 
 def run_ant_system():
     
     project_dir = Path(__file__).resolve().parent.parent.parent
-    path = project_dir / 'data' / 'tsplib95'/ 'tasks' / 'a280.tsp'
+    problem_path = project_dir / 'data' / 'tsplib95'/ 'tasks' / 'a280.tsp'
 
     problem = TSPProblem(
-        file_path=path, 
+        file_path=problem_path, 
         seed = 42
-        )
-
-    config = ASHyperparameters(
-        m=280, 
-        c=0.2, 
-        p=0.5, 
-        q=10, 
-        alpha=2, 
-        beta=2, 
-        )
+    )
     
-    optimizer = AntOptimizer(
+    hyperparameters_path = project_dir / 'hyperparameters' / 'AS'
+
+    
+    #tuner = ASTuner(problem=problem, max_fes=5_000) 
+    #hyperparameters = tuner.tune(hyperparameters_path, 10)
+  
+    hyperparameters = ASTuner.load_params(
+        hyperparameters_path/'a280.tsp_hyperparameters.json'
+    )
+
+  
+    optimizer = ASOptimizer(
         problem=problem, 
-        max_fes=2_000, 
-        config=config
-        ) 
+        max_fes=8_000, 
+        hyperparameters=hyperparameters
+    ) 
     
     
     start_time = time.perf_counter()
@@ -36,16 +39,17 @@ def run_ant_system():
     optimizer.solve()
 
     end_time = time.perf_counter()
+
     execution_time = end_time - start_time
 
-    analyzer = AntResultAnalyzer(
-        history=optimizer.history, 
-        target_path=project_dir / 'charts',
-        series_name='a280.tsp'
-        )
+    analyzer = ASResultAnalyzer(
+        optimizer=optimizer, 
+        target_path=project_dir / 'results' / 'AS',
+        series_name='a280',
+        exec_time=execution_time
+    )
 
     analyzer.plot_all_and_save()
-    print(f'Time: {execution_time}')
 
 
 if __name__ == '__main__':

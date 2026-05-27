@@ -7,8 +7,8 @@ import numpy as np
 class TSPProblem(Problem):
     def __init__(self, file_path: Path | str, seed: int = 42):
         super().__init__(seed)
-        file_path = Path(file_path)
-        self.tsplib_problem = tsplib95.load(file_path) # parsuje problem z pliku
+        self.file_path = Path(file_path)
+        self.tsplib_problem = tsplib95.load(self.file_path) # parsuje problem z pliku
         self._raw_nodes = list(self.tsplib_problem.get_nodes())
         self.num_cities = len(self._raw_nodes)
         self.nodes = np.arange(self.num_cities)
