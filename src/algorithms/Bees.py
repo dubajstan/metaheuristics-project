@@ -89,13 +89,16 @@ class BeesOptimizer:
             if self.hyperparameters.neighbourhood_type == "two_opt":
                 neighbour = self._get_two_opt_neighbour(neighbour)
             else:
-                neighbour = self.problem.get_neighbour(neighbour)
+                neighbour = self._get_swap_neighbour(neighbour)
         return np.copy(neighbour)
 
     def _get_two_opt_neighbour(self, solution: Solution) -> Solution:
+        if hasattr(self.problem, "get_neighbour_swap"):
+            return self.problem.get_neighbour(solution, self.problem.rng)
+
         neighbour = np.copy(solution)
         if len(neighbour) <= 3:
-            return self.problem.get_neighbour(neighbour)
+            return self._get_swap_neighbour(neighbour)
 
         first, second = self.problem.rng.choice(
             np.arange(1, len(neighbour)),
@@ -105,6 +108,11 @@ class BeesOptimizer:
         left, right = sorted((first, second))
         neighbour[left : right + 1] = neighbour[left : right + 1][::-1]
         return neighbour
+
+    def _get_swap_neighbour(self, solution: Solution) -> Solution:
+        if hasattr(self.problem, "get_neighbour_swap"):
+            return self.problem.get_neighbour_swap(solution, self.problem.rng)
+        return self.problem.get_neighbour(solution)
 
     def _initialize_population(self) -> list[EvaluatedSolution]:
         population: list[EvaluatedSolution] = []
