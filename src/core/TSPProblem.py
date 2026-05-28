@@ -1,4 +1,4 @@
-from Problem import Problem
+from src.core.Problem import Problem
 import tsplib95
 from pathlib import Path
 import numpy as np
@@ -8,23 +8,23 @@ class TSPProblem(Problem):
     def __init__(self, file_path: Path | str, seed: int = 42):
         super().__init__(seed)
         file_path = Path(file_path)
-        self.tsplib_problem = tsplib95.load(file_path) # parsuje problem z pliku
-        self._raw_nodes = list(self.tsplib_problem.get_nodes())
+        tsplib_problem = tsplib95.load(file_path) # parsuje problem z pliku
+        self._raw_nodes = list(tsplib_problem.get_nodes())
         self.num_cities = len(self._raw_nodes)
         self.nodes = np.arange(self.num_cities)
         self.start_node = 0        
-        self._distance_matrix = self._build_distance_matrix()
+        self._distance_matrix = self._build_distance_matrix(tsplib_problem)
         np.fill_diagonal(self._distance_matrix, 0.0)
 
 
-    def _build_distance_matrix(self) -> np.ndarray:
+    def _build_distance_matrix(self, tsplib_problem) -> np.ndarray:
         """Creates internal weight matrix in numpy"""
         matrix = np.zeros((self.num_cities, self.num_cities), dtype=np.float64)
         for i in range(self.num_cities):
             for j in range(self.num_cities):
                 raw_i = self._raw_nodes[i]
                 raw_j = self._raw_nodes[j]
-                matrix[i, j] = self.tsplib_problem.get_weight(raw_i, raw_j)
+                matrix[i, j] = tsplib_problem.get_weight(raw_i, raw_j)
         return matrix
 
 
@@ -48,12 +48,23 @@ class TSPProblem(Problem):
         return full_tour
     
 
-    def get_neighbour(self, solution: np.ndarray | list[int]) -> np.ndarray:
+    def get_neighbour_swap(self, solution: np.ndarray | list[int], rng) -> np.ndarray:
         """Returns a neighbour by swapping two random cities with each other"""
         neighbour = np.copy(solution)
-        idx1, idx2 = self.rng.choice(range(1, len(neighbour)), size=2, replace=False)
+        idx1, idx2 = rng.choice(range(1, len(neighbour)), size=2, replace=False)
         neighbour[idx1], neighbour[idx2] = neighbour[idx2], neighbour[idx1]
         return neighbour
+    
+
+    # 2-opt
+    def get_neighbour(self, solution: np.ndarray | list[int], rng) -> np.ndarray:
+        neighbour = np.copy(solution)
+        i, j = sorted(
+            rng.choice(range(1, len(neighbour)), size=2, replace=False)
+        )
+        neighbour[i:j+1] = neighbour[i:j+1][::-1]
+        return neighbour
+
     
     def get_distance(self, city_a: int, city_b: int) -> float:
         """Returns distance between city_a and city_b using internal matrix"""
