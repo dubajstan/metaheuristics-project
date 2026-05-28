@@ -48,12 +48,23 @@ class TSPProblem(Problem):
         return full_tour
     
 
-    def get_neighbour(self, solution: np.ndarray | list[int]) -> np.ndarray:
+    def get_neighbour_swap(self, solution: np.ndarray | list[int], rng) -> np.ndarray:
         """Returns a neighbour by swapping two random cities with each other"""
         neighbour = np.copy(solution)
-        idx1, idx2 = self.rng.choice(range(1, len(neighbour)), size=2, replace=False)
+        idx1, idx2 = rng.choice(range(1, len(neighbour)), size=2, replace=False)
         neighbour[idx1], neighbour[idx2] = neighbour[idx2], neighbour[idx1]
         return neighbour
+    
+
+    # 2-opt
+    def get_neighbour(self, solution: np.ndarray | list[int], rng) -> np.ndarray:
+        neighbour = np.copy(solution)
+        i, j = sorted(
+            rng.choice(range(1, len(neighbour)), size=2, replace=False)
+        )
+        neighbour[i:j+1] = neighbour[i:j+1][::-1]
+        return neighbour
+
     
     def get_distance(self, city_a: int, city_b: int) -> float:
         """Returns distance between city_a and city_b using internal matrix"""

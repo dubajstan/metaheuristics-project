@@ -3,13 +3,14 @@ import math
 import numpy as np
 from src.core.OptimizationAlgorithm import OptimizationAlgorithm
 from typing import Callable, Any
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
 
 
 type Solution = np.ndarray
 
 
-def get_next_solution(current_solution: Solution, current_energy: float, temperature: float, problem: Problem) -> tuple[Solution, float, bool]:
+def get_next_solution(current_solution: Solution, current_energy: float, temperature: float, problem: Problem, rng) -> tuple[Solution, float, bool]:
     """
     Calculated the next solution for SA chain.
     Returns:
@@ -17,24 +18,22 @@ def get_next_solution(current_solution: Solution, current_energy: float, tempera
     - next_energy (float): The energy of the next state
     - accepted (bool): True if the proposed neighbour was accepted, False otherwise
     """
-
-    if temperature < 1e-12: # zeby nie dzielilo przez 0
-        raise ZeroDivisionError('Upsi Daisy')
     
-    neighbour = problem.get_neighbour(current_solution)
+    neighbour = problem.get_neighbour(current_solution, rng)
     neighbour_energy = problem.evaluate(neighbour)
     delta_E = neighbour_energy - current_energy
     if delta_E < 0:
         return neighbour, neighbour_energy, True
-    else:
+    
+    if temperature > 1e-12:
         accept_prob = math.exp(-delta_E / temperature)
-        if problem.rng.random() < accept_prob:
+        if rng.random() < accept_prob:
             return neighbour, neighbour_energy, True
     return current_solution, current_energy, False
 
 
 def run_as_chain(chain_id: int, problem: Problem, init_temp: float, next_temp_func: Callable[[int, float], float], max_fes: int) -> dict[str, Any]:
-    problem.rng = np.random.default_rng(problem.seed + chain_id)
+    rng = np.random.default_rng(problem.seed + chain_id)
     current_solution = problem.create_random_solution()
     current_energy = problem.evaluate(current_solution)
     best_solution = np.copy(current_solution)
@@ -42,39 +41,36 @@ def run_as_chain(chain_id: int, problem: Problem, init_temp: float, next_temp_fu
     temperature = init_temp
     iteration = 0
     history = []
-    history.append({
-        'chain_id': chain_id,
-        'iteration': iteration,
-        'solution': np.copy(current_solution),
-        'energy': current_energy,
-        'temperature': temperature,
-        'accepted': True
-    })
+    history.append((
+        chain_id,
+        iteration,
+        current_energy,
+        temperature,
+        True
+    ))
 
     while problem.fe_count < max_fes:
         iteration += 1
-        if temperature < 1e-12:
-            break
 
         current_solution, current_energy, accepted = get_next_solution(
             current_solution,
             current_energy,
             temperature,
-            problem
+            problem,
+            rng
         )
 
         if current_energy < best_energy:
             best_energy = current_energy
             best_solution = np.copy(current_solution)
 
-        history.append({
-        'chain_id': chain_id,
-        'iteration': iteration,
-        'solution': np.copy(current_solution),
-        'energy': current_energy,
-        'temperature': temperature,
-        'accepted': accepted
-        })
+        history.append((
+        chain_id,
+        iteration,
+        current_energy,
+        temperature,
+        accepted
+        ))
 
         temperature = next_temp_func(iteration, temperature)
     
@@ -99,12 +95,12 @@ class SimulatedAnnealing(OptimizationAlgorithm):
         global_best_solution = None
         global_best_energy = float('inf')
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
             futures = [
                 executor.submit(
                     run_as_chain,
                     chain_id,
-                    self.problem,
+                    deepcopy(self.problem),
                     init_temp,
                     next_temp_func,
                     fes_per_worker
@@ -112,7 +108,7 @@ class SimulatedAnnealing(OptimizationAlgorithm):
                 for chain_id in range(self.workers)
             ]
 
-            for future in concurrent.futures.as_completed(futures):
+            for future in as_completed(futures):
                 result = future.result()
                 self.chain_results.append(result)
                 self.history.extend(result['history'])
@@ -120,7 +116,7 @@ class SimulatedAnnealing(OptimizationAlgorithm):
                     global_best_energy = result['best_energy']
                     global_best_solution = np.copy(result['best_solution'])
         
-        self.history.sort(key=lambda x: (x['chain_id'], x['iteration']))
+        self.history.sort(key=lambda x: (x[0], x[1]))
 
         return global_best_solution
 
@@ -134,82 +130,110 @@ import pandas as pd
 import tsplib95
 
 
-class ExponentialCoolingWithLocalSearch:
-    def __init__(self, init_temp: float, final_temp: float, max_fes: int, cooling_fraction: float = 0.85):
-        """
-        cooling_fraction: np. 0.85 oznacza, że przez 85% czasu stygniemy, a przez ostatnie 15% robimy Local Search.
-        """
-        self.init_temp = init_temp
-        # Upewniamy się, że final_temp jest większa od 1e-12, żeby nie uruchomić "break"
-        self.final_temp = max(final_temp, 1e-10) 
-        
-        # Obliczamy ile iteracji faktycznie przeznaczamy na stygnięcie
-        self.cooling_steps = int(max_fes * cooling_fraction)
-        
-        # Wyliczamy alpha TYLKO dla kroków chłodzenia
-        self.alpha = (self.final_temp / self.init_temp) ** (1.0 / self.cooling_steps)
-        print(f"[Cooling Setup] Alpha: {self.alpha:.7f} | Chłodzenie: {self.cooling_steps} kroków | Local Search: {max_fes - self.cooling_steps} kroków")
-
+class GeomTempCooling:
     def __call__(self, iteration: int, current_temp: float) -> float:
-        # Faza 1: Normalne stygnięcie
-        if iteration < self.cooling_steps:
-            return current_temp * self.alpha
-            
-        # Faza 2: Czysty Local Search
-        # Zwracamy stałą, mikroskopijną temperaturę.
-        # Prawdopodobieństwo akceptacji gorszego rozwiązania będzie matematycznie bliskie zeru.
-        else:
-            return 1e-11
+        return 0.999999 * current_temp
+    
 
+def estimate_initial_temperature(problem, samples=1000, target_acceptance=0.8, rng=None):
+    sol = problem.create_random_solution()
+    energy = problem.evaluate(sol)
 
+    deltas = []
+
+    for _ in range(samples):
+        neigh = problem.get_neighbour(sol, rng)
+        neigh_energy = problem.evaluate(neigh)
+
+        delta = neigh_energy - energy
+
+        if delta > 0:
+            deltas.append(delta)
+
+        sol = neigh
+        energy = neigh_energy
+
+    avg_delta = np.mean(deltas)
+
+    return -avg_delta / np.log(target_acceptance)
 
 
 if __name__ == '__main__':
     problem = TSPProblem('data/tsplib95/tasks/a280.tsp')
-    sa = SimulatedAnnealing(problem, 1000000, 8)
-    init_temp = 10000000.0
-    max_fes = 1000000 // 8
-    temp_func = ExponentialCoolingWithLocalSearch(init_temp, 0.0, max_fes)
-    solution = sa.solve(1000000.0, temp_func)
+    max_fes = 5_000_000
+    workers = 1
+    rng = np.random.default_rng(seed=42)
+    init_temp = estimate_initial_temperature(problem, rng=rng)
+    print(init_temp)
+    temperature_func = GeomTempCooling()
+
+    sa = SimulatedAnnealing(problem, max_fes, workers)
+    #temp_func = ExponentialCoolingWithLocalSearch(init_temp, 0.0, max_fes)
+    solution = sa.solve(init_temp, temperature_func)
     
     opt_data = tsplib95.load('data/tsplib95/solutions/a280.opt.tour')
     opt_nodes = opt_data.tours[0]
     optimal_solution = np.array(opt_nodes) - 1
     optimal_energy = problem.evaluate(optimal_solution)
 
-    df = pd.DataFrame(sa.history)
+    df = pd.DataFrame(sa.history, columns=['chain_id', 'iteration', 'energy', 'temperature', 'is_accepted'])
     sns.set_theme(style="whitegrid", palette="husl")
-    fig, axes = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    # wykres energi od iteracji
     sns.lineplot(
         data=df, 
         x='iteration', 
         y='energy', 
         hue='chain_id', 
-        ax=axes[0], 
+        ax=axes[0, 0], 
         alpha=0.8,
         linewidth=1.5
     )
-    axes[0].axhline(
+    axes[0, 0].axhline(
         y=optimal_energy, 
         color='black', 
         linestyle='--', 
         linewidth=2, 
         label=f'Global Optimum ({optimal_energy:.0f})'
     )
-    axes[0].set_title('Simulated Annealing: Convergence of Energy', fontsize=14, fontweight='bold')
-    axes[0].set_ylabel('Energy (Tour Distance)', fontsize=12)
-    axes[0].legend(title='Legend', bbox_to_anchor=(1.01, 1), loc='upper left')
+    axes[0, 0].set_title('Simulated Annealing: Convergence of Energy', fontsize=14, fontweight='bold')
+    axes[0, 0].set_ylabel('Energy (Tour Distance)', fontsize=12)
+    axes[0, 0].legend(title='Legend', bbox_to_anchor=(1.01, 1), loc='upper left')
+    # wykres temperatury od iteracji
     sns.lineplot(
         data=df[df['chain_id'] == 0], 
         x='iteration', 
         y='temperature', 
-        ax=axes[1], 
+        ax=axes[0, 1], 
         color='crimson', 
         linewidth=2.5
     )
-    axes[1].set_title('Cooling Schedule', fontsize=14, fontweight='bold')
-    axes[1].set_xlabel('Function Evaluations (Iterations)', fontsize=12)
-    axes[1].set_ylabel('Temperature', fontsize=12)
+    axes[0, 1].set_title('Cooling Schedule', fontsize=14, fontweight='bold')
+    axes[0, 1].set_xlabel('Function Evaluations (Iterations)', fontsize=12)
+    axes[0, 1].set_ylabel('Temperature', fontsize=12)
+    # wykres średniej akceptacji w przedzialach 1000 iteracji
+    df['is_accepted'] = df['is_accepted'].astype(float)
+    df['rolling_acceptance'] = df.groupby('chain_id')['is_accepted'].transform(
+        lambda x: x.rolling(window = 1000, min_periods=1).mean()
+    )
+    sns.lineplot(
+        data=df,
+        x='iteration',
+        y='rolling_acceptance',
+        hue='chain_id',
+        ax=axes[1,0],
+        alpha=0.8,
+        linewidth=1.5,
+        legend=False
+    )
+    axes[1, 0].set_title('Moving average of 1000 iterations', fontsize=13, fontweight='bold')
+    axes[1, 0].set_xlabel('Function evaluations (iterations)', fontsize=11)
+    axes[1, 0].set_ylabel('Acceptance rate (0.0 = 0%, 1.0 = 100%)')
+    axes[1, 0].set_ylim(-0.05, 1.05)
+
+
+
     plt.tight_layout()
     plt.savefig('sa_history_seaborn.png', dpi=300, bbox_inches='tight')
     plt.show()
+
