@@ -7,9 +7,24 @@ from algorithms.ASHyperparameters import ASHyperparameters
 from algorithms.ASOptimizer import ASOptimizer
 
 class ASTuner:
+
+    '''
+    Class responsible for tuning hyperparameters of the Ant System algorithm using Optuna.
+    '''
+
     def __init__(self, problem: TSPProblem, max_fes: int):
+
+        '''
+        Initializes the ASTuner object.
+
+        Parameters
+        -----
+        problem : TSPProblem - The TSP problem instance to be optimized.
+        max_fes : int - Maximum allowed number of cost function evaluations per trial.
+        '''
+
         self.problem_path = problem.file_path
-        self.problem_name = self.problem_path.name
+        self.problem_name = self.problem_path.stem
         self.problem = problem
         self.max_fes = max_fes
         
@@ -18,19 +33,28 @@ class ASTuner:
     def _objective(self, trial: optuna.Trial) -> float:
         '''
         Objective function for Optuna. Executes a single trial with sampled hyperparameters.
+
+        Parameters
+        -----
+        trial : optuna.Trial - A single optimization Optuna trial object.
+
+        Returns
+        -----
+        float - The best cost found by the Ant System using sampled hyperparameters.
         '''
-        self.problem.fe_count = 0  #Reset the evaluation counter in the original problem object before each run
-        
+        # Reset the evaluation counter in the original problem object before each run
+        self.problem.fe_count = 0 
+
         min_ants = max(5, int(0.5 * self.problem.num_cities))
         max_ants = max(20, int(1.5 * self.problem.num_cities))
 
-        #Define the hyperparameter search space
+        # Define the hyperparameter search space
         m = trial.suggest_int("m", min_ants, max_ants)
-        c = trial.suggest_float("c", 0.01, 10.0)
-        p = trial.suggest_float("p", 0.1, 0.99)
-        q = trial.suggest_float("q", 1.0, 500.0)
+        c = trial.suggest_float("c", 0.01, 10.0, log=True)
+        p = trial.suggest_float("p", 0.4, 0.9)
+        q = trial.suggest_float("q", 1.0, 1000.0, log=True)
         alpha = trial.suggest_float("alpha", 0.5, 5.0)
-        beta = trial.suggest_float("beta", 2.0, 5.0)
+        beta = trial.suggest_float("beta", 1.0, 5.0)
         
         optimizer = ASOptimizer(problem=self.problem, max_fes=self.max_fes, hyperparameters=ASHyperparameters(m=m, c=c, p=p, q=q, alpha=alpha, beta=beta))
         best_cost, _ = optimizer.solve()
@@ -40,17 +64,28 @@ class ASTuner:
     def tune(self, save_directory: Path | str, n_trials: int = 50, save_file_name: str | None = None) -> ASHyperparameters:
         '''
         Runs the hyperparameter tuning process and saves the results.
+        
+        Parameters
+        -----
+        save_directory : Path | str - directory in which found hyperparameters will be saved.
+        n_trials : int - number of trails that optuna will perform.
+        save_file_name : str | None - name of file in which found hyperparameters will be saved.
+
+        Returns
+        -----
+        ASHyperparameters - data object with found hyperparameters
+
         '''
         study = optuna.create_study(direction="minimize")
         study.optimize(self._objective, n_trials=n_trials)
         
         best_params = study.best_params
         
-        self.save_params(best_params, directory_path=save_directory)
+        self._save_params(best_params, save_file_name=save_file_name, directory_path=save_directory)
         
         return ASHyperparameters(**best_params)
 
-    def save_params(self, params: dict, directory_path: Path | str, save_file_name: str | None = None) -> None:
+    def _save_params(self, params: dict, directory_path: Path | str, save_file_name: str | None = None) -> None:
         '''
         Saves the hyperparameter dictionary to a JSON file in the specified directory.
         '''
@@ -67,10 +102,21 @@ class ASTuner:
             json.dump(data, f, indent=4)
 
     @staticmethod
-    def load_params(file_path: str) -> ASHyperparameters:
+    def load_params(file_path: Path | str) -> ASHyperparameters:
         '''
         Loads the hyperparameters from a given JSON file path.
+
+        Parameters
+        -----
+        file_path : Path | str - Path of the hyperparameters JSON file.
+
+        Returns
+        -----
+        ASHyperparameters - data object with loaded hyperparameters
+
         '''
+
+        file_path = Path(file_path)
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Hyperparameter file not found: {file_path}")

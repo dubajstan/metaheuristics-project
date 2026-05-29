@@ -6,33 +6,69 @@ from algorithms.ASTuner import ASTuner
 from pathlib import Path
 import time
 
-def run_ant_system():
-    
-    project_dir = Path(__file__).resolve().parent.parent.parent
-    problem_path = project_dir / 'data' / 'tsplib95'/ 'tasks' / 'a280.tsp'
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+HYPERPARAMETERS_DIR = PROJECT_DIR / 'hyperparameters' / 'AS'
+TASKS_DIR = PROJECT_DIR / 'data' / 'tsplib95'/ 'tasks'
+OPTIMAL_SOLUTIONS_DIR = PROJECT_DIR / 'data' / 'tsplib95' / 'solutions'
+RESULTS_DIR = PROJECT_DIR / 'results' / 'AS'
+
+def tune_for_problem(problem_name: str, seed: int, max_fes: int, iterations: int) -> None:
+    '''
+    Initializes the TSP problem and runs the hyperparameter tuning process using Optuna.
+
+    Parameters
+    -----
+    problem_name : str - Name of the problem instance without extension.
+    seed : int - Fixed seed.
+    max_fes : int - Maximum number of cost function evaluations per trial.
+    iterations : int - Number of trials for the tuner to perform.
+    '''   
 
     problem = TSPProblem(
-        file_path=problem_path, 
-        seed = 42
+        file_path = TASKS_DIR /f'{problem_name}.tsp', 
+        seed = seed
     )
-    
-    hyperparameters_path = project_dir / 'hyperparameters' / 'AS'
 
-    
-    #tuner = ASTuner(problem=problem, max_fes=5_000) 
-    #hyperparameters = tuner.tune(hyperparameters_path, 10)
+    tuner = ASTuner(
+        problem=problem, 
+        max_fes=max_fes
+        )
+     
+    tuner.tune(HYPERPARAMETERS_DIR, iterations)
   
+
+
+def run_ant_system(problem_name: str, seed: int, max_fes: int, series_name: str | None = None) -> None:
+
+    '''
+    Loads tuned hyperparameters, runs the Ant System optimization, and generates analysis reports.
+
+    Parameters
+    -----
+    problem_name : str - Name of the problem file without extension.
+    seed : int - Random seed for reproducibility.
+    max_fes : int - Maximum number of cost function evaluations for the run.
+    series_name : str | None - Optional name for the output series. Defaults to problem_name if None.
+    '''
+
+
+    if not series_name:
+        series_name = problem_name
+    
+    problem = TSPProblem(
+        file_path = TASKS_DIR /f'{problem_name}.tsp', 
+        seed = seed
+    )
+      
     hyperparameters = ASTuner.load_params(
-        hyperparameters_path/'a280.tsp_hyperparameters.json'
+        HYPERPARAMETERS_DIR/f'{problem_name}_hyperparameters.json'
     )
 
-  
     optimizer = ASOptimizer(
         problem=problem, 
-        max_fes=8_000, 
-        hyperparameters=hyperparameters
+        max_fes=max_fes, 
+        hyperparameters=hyperparameters,
     ) 
-    
     
     start_time = time.perf_counter()
     
@@ -44,8 +80,9 @@ def run_ant_system():
 
     analyzer = ASResultAnalyzer(
         optimizer=optimizer, 
-        target_path=project_dir / 'results' / 'AS',
-        series_name='a280',
+        target_dir=RESULTS_DIR,
+        optimal_sol_dir = OPTIMAL_SOLUTIONS_DIR,
+        series_name=series_name,
         exec_time=execution_time
     )
 
@@ -53,4 +90,17 @@ def run_ant_system():
 
 
 if __name__ == '__main__':
-    run_ant_system()
+    
+    tune_for_problem(
+        problem_name='att48',
+        seed=42, 
+        max_fes=20_000, 
+        iterations=100
+        )
+
+    run_ant_system(
+        problem_name='att48',
+        seed=42, 
+        max_fes=10000, 
+        series_name=None
+        )
