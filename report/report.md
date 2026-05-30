@@ -72,15 +72,19 @@ Sources:
 ## 2. Solution representation
 
 The TSP solution for $n$ vertices can be represented as a permutation $\pi$ of the vertex set, where $v_i$ denotes the $i$-th vertex in the sequence:
+
 $$\pi = (v_1, v_2, \dots, v_n)$$
 
 The weights of edges  - distances - are retrieved from a distance matrix $D$, where each element $d_{i,j}$ represents the cost of traveling from vertex $i$ to vertex $j$:
+
 $$D = [d_{i,j}]_{n \times n}$$
 
 The objective of the optimization is to find an optimal tour $\pi^*$ that minimizes the cost function $F(\pi)$. This function calculates the sum of distances between consecutive vertices and includes the distance from the last vertex back to the first one to close the cycle:
+
 $$F(\pi) = \sum_{i=1}^{n-1} d_{v_i, v_{i+1}} + d_{v_n, v_1}$$
 
 $$\pi^* = \arg\min_{\pi \in \Pi} F(\pi)$$
+
 where $\Pi$ denotes the set of all possible permutations  - valid tours.
 
 ---
