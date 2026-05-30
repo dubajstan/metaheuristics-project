@@ -171,9 +171,10 @@ Because the 2-opt operator proved significantly more efficient at discovering lo
 
 
 #### Hyperparameters:
-* $T_0$ - initial temperature. Based on a [Github repository](https://github.com/paololapo/Simulated_annealing_for_TSP) we decided to approxiate the initial temperature with adaptive initial temperature estimation, so it would start at around 80%.
+* $T_0$ - initial temperature. Based on a [Github repository](https://github.com/paololapo/Simulated_annealing_for_TSP) we decided to approxiate the initial temperature with adaptive initial temperature estimation.
 * $\alpha$ - cooling rate. Needs to strictly be in range (0, 1). Typically is set to be in range (0.95, 0.9999999999) depending on the problem size.
 
+The hyperparameters will be optimized using *[Optuna](https://optuna.org/)*.
 
 ### 3.3 Bees Algorithm
 
