@@ -127,6 +127,17 @@ def run_experiments_for_report(problem_name: str, max_fes: int, start_seed : int
         json.dump(results_data, f, indent=4)
 
 if __name__ == '__main__':
+    
+    run_experiments_for_report(
+        problem_name= 'a280',
+        max_fes = 16_000
+    )
+
+    run_experiments_for_report(
+        problem_name= 'eil101',
+        max_fes = 16_000
+    )
+
     run_experiments_for_report(
         problem_name= 'att48',
         max_fes = 16_000

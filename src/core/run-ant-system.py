@@ -92,15 +92,16 @@ def run_ant_system(problem_name: str, seed: int, max_fes: int, series_name: str 
 if __name__ == '__main__':
     
     tune_for_problem(
-        problem_name='att48',
+        problem_name='a280',
         seed=42, 
         max_fes=20_000, 
-        iterations=100
+        iterations=50
         )
 
+
     run_ant_system(
-        problem_name='att48',
-        seed=42, 
+        problem_name='a280',
+        seed=43, 
         max_fes=10000, 
         series_name=None
         )
