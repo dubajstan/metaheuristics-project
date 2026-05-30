@@ -85,3 +85,30 @@ where $\Pi$ denotes the set of all possible permutations  - valid tours.
 
 ---
 
+## 3. Overwiew of selected alghorithms
+
+### 3.1 Ant Colony Optimization
+
+Ant System is a general-purpose heuristic algorithm which can be used to solve various optimization problems. It is a population-based approach. It was proposed by Marco Dorigo, Vittorio Maniezzo and Alberto Colorni in 1996 in the paper *[Ant System: Optimization by a Colony of Cooperating Agents](https://ieeexplore.ieee.org/document/484436)*. 
+In this system,  search activities are distributed over so-called *ants* – agents with basic capabilities based on the behaviour of real ants. In fact, those agents possess capabilities beyond those of natural ants, like memorizing their paths.
+
+Ant System is inspired by ants establishing the shortest routes from their colonies to feeding resources and back. The medium used by ants to set up those paths consists of pheromone trails. Each moving ant lays pheromone in different quantities. Ants tend to choose paths with more pheromone left while reinforcing the chosen path with their own pheromones. The shortest paths are eventually established, since shorter paths are covered with higher frequency than the longer ones.
+
+The implementation is based on ant-cycle algorithm introduced in the original paper. However it does differ from original version – the stopping criterion relies on the maximum number of cost function evaluations instead of a fixed number of cycles and detecting stagnation behaviour is based on exceeding limit of cycles without improvement rather than on all ants traversing the same path. While the implementation remains semantically equivalent to the original algorithm, certain traditional loops have been replaced with optimized, vectorized operations.
+
+The hyperparameters of the ant-cycle optimization algorithm:
+ * $m$ - The total number of ants in the colony.
+ * $c$ - The initial pheromone trail intensity assigned to each edge.
+ * $p$ - The pheromone retention coefficient, where $(1 - p)$ represents the evaporation rate.
+ * $q$ - A constant used to scale the amount of pheromone laid by ants on traversed edges.
+ * $\alpha$ - A parameter controlling the influence of the pheromone trail on the ant's routing decisions.
+ * $\beta$ - A parameter controlling the influence of actual distance on the ant's routing decisions.
+
+Additionalny, in the implemention examined in this report, *cost function evaluation limit* and *cycles without best cost improvement limit* are to be set.
+
+### 3.2 Simulated Annealing
+
+### 3.3 Bees Algorithm
+
+---
+
