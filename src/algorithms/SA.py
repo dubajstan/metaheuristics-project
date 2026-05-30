@@ -17,9 +17,6 @@ from src.core.TSPProblem import TSPProblem
 
 Solution = np.ndarray
 
-# ==========================================
-# 1. CORE ALGORITHM MODULES
-# ==========================================
 
 def get_next_solution(current_solution: Solution, current_energy: float, temperature: float, problem: Problem, rng) -> tuple[Solution, float, bool]:
     neighbour = problem.get_neighbour(current_solution, rng)
@@ -52,7 +49,6 @@ def run_single_sa(seed: int, problem: Problem, init_temp: float, alpha: float, m
     while problem.fe_count < max_fes:
         iteration += 1
         
-        old_energy = current_energy
         current_solution, current_energy, accepted = get_next_solution(
             current_solution, current_energy, temperature, problem, rng
         )
@@ -100,26 +96,22 @@ def estimate_initial_temperature(problem: Problem, samples: int = 1000, target_a
     avg_delta = np.mean(deltas) if deltas else 1.0
     return -avg_delta / np.log(target_acceptance)
 
-# ==========================================
-# 2. TUNING & REPORT LOGIC
-# ==========================================
 
-def tune_hyperparameters(problem_path: str, max_fes_tuning: int = 50_000, n_trials: int = 20) -> tuple[float, float]:
+def tune_hyperparameters(problem_path: str, max_fes_tuning: int = 50_000, n_trials: int = 50) -> tuple[float, float]:
     print(f"\n--- Rozpoczynam strojenie Optuna dla: {os.path.basename(problem_path)} ---")
     problem = TSPProblem(problem_path)
     
     def objective(trial):
         target_acc = trial.suggest_float('target_acceptance', 0.5, 0.95)
-        alpha = trial.suggest_float('alpha', 0.99, 0.99999)
+        alpha = trial.suggest_float('alpha', 0.95, 0.9999999)
         
-        seeds = [42, 123]
         energies = []
         
-        for s in seeds:
+        for s in range(5):
             local_prob = deepcopy(problem)
-            rng = np.random.default_rng(s)
-            t0 = estimate_initial_temperature(local_prob, 500, target_acc, rng)
-            res = run_single_sa(s, local_prob, t0, alpha, max_fes_tuning, stagnation_limit=10_000)
+            rng = np.random.default_rng()
+            t0 = estimate_initial_temperature(local_prob, 1000, target_acc, rng)
+            res = run_single_sa(s, local_prob, t0, alpha, max_fes_tuning, stagnation_limit=50_000)
             energies.append(res['best_energy'])
             
         return float(np.mean(energies))
@@ -168,34 +160,68 @@ def generate_json_report(results: list, problem_name: str, max_fes: int, optimal
     filepath = os.path.join(save_dir, f"{problem_name}_sa_results.json")
     with open(filepath, 'w') as f:
         json.dump(report, f, indent=4)
-    print(f"[✔] Zapisano raport JSON: {filepath}")
+    print(f"Saved report JSON: {filepath}")
 
 
 def generate_pipeline_plots(run_history: list, problem_name: str, run_id: int, optimal_cost: float, found_cost: float, save_dir: str):
-    """Generuje szczegółowy wykres konwergencji dla konkretnego uruchomienia."""
+    """Generuje dwupanelowy wykres diagnostyczny (Scatter aktualnej energii + Rolling Acceptance)."""
     df = pd.DataFrame(run_history)
     sns.set_theme(style="whitegrid", palette="muted")
     
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Utworzenie figury składającej się z 2 wykresów (jeden pod drugim)
+    fig, axes = plt.subplots(2, 1, figsize=(11, 10), sharex=True)
     
-    # 1. Bieżąca energia
-    sns.lineplot(data=df, x='iteration', y='energy', color='gray', alpha=0.3, linewidth=1, label='Bieżąca energia (Current Energy)')
-    # 2. Najlepsza znaleziona energia w czasie
-    sns.lineplot(data=df, x='iteration', y='best_energy', color='blue', linewidth=2.5, label='Najlepsza dotychczasowa (Best Found Energy)')
-    # 3. Teoretyczne globalne optimum
-    ax.axhline(y=optimal_cost, color='black', linestyle='--', linewidth=1.5, label=f'Globalne optimum referencyjne (Global Optimum: {optimal_cost:.0f})')
-    # 4. Ostatecznie znalezione optimum w tym uruchomieniu
-    ax.axhline(y=found_cost, color='red', linestyle='-', linewidth=1.5, label=f'Ostateczny wynik tego uruchomienia (Found Global Optimum: {found_cost:.0f})')
+    # ----------------------------------------------------
+    # PANELI 1: WYKRES PUNKTOWY ENERGII I ZBIEŻNOŚCI
+    # ----------------------------------------------------
+    # Rysowanie punktów aktualnej energii (current_energy) przy każdej iteracji
+    axes[0].scatter(
+        df['iteration'], df['energy'], 
+        color='gainsboro', alpha=0.5, s=1.5, 
+        label='Bieżąca energia stanu (Current Energy)'
+    )
     
-    ax.set_title(f'[{problem_name.upper()}] Wykres zbieżności - Test {run_id:02d}', fontsize=13, fontweight='bold')
-    ax.set_xlabel('Liczba ewaluacji (Iterations / FEs)', fontsize=11)
-    ax.set_ylabel('Wartość funkcji celu (Energy / Tour Distance)', fontsize=11)
-    ax.legend(loc='upper right', frameon=True, facecolor='white', edgecolor='none')
+    # Rysowanie linii ciągłej dla najlepszego dotychczasowego wyniku (best found)
+    axes[0].plot(
+        df['iteration'], df['best_energy'], 
+        color='blue', linewidth=2.5, 
+        label='Najlepsza dotychczasowa (Best Found Energy)'
+    )
     
+    # Linie referencyjne dla optimum teoretycznego oraz znalezionego
+    axes[0].axhline(y=optimal_cost, color='black', linestyle='--', linewidth=1.5, label=f'Globalne optimum referencyjne ({optimal_cost:.0f})')
+    axes[0].axhline(y=found_cost, color='red', linestyle='-', linewidth=1.5, label=f'Ostateczny wynik uruchomienia ({found_cost:.0f})')
+    
+    axes[0].set_title(f'[{problem_name.upper()}] Profil Zbieżności i Eksploracji - Test {run_id:02d}', fontsize=12, fontweight='bold')
+    axes[0].set_ylabel('Wartość funkcji celu (Energy / Distance)', fontsize=10)
+    axes[0].legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9)
+    
+    # ----------------------------------------------------
+    # PANEL 2: WYKRES AKCEPTACJI (SUMA KROCZĄCA 1000)
+    # ----------------------------------------------------
+    # Obliczanie średniej kroczącej z okna o rozmiarze 1000 iteracji
+    df['is_accepted_numeric'] = df['is_accepted'].astype(float)
+    df['rolling_acceptance'] = df['is_accepted_numeric'].rolling(window=1000, min_periods=1).mean()
+    
+    axes[1].plot(
+        df['iteration'], df['rolling_acceptance'], 
+        color='crimson', linewidth=1.8, 
+        label='Suma krocząca akceptacji (Window = 1000)'
+    )
+    
+    axes[1].set_title('Wskaźnik Akceptacji Ruchów w Czasie', fontsize=11, fontweight='bold')
+    axes[1].set_xlabel('Liczba ewaluacji / Iteracje (FEs)', fontsize=10)
+    axes[1].set_ylabel('Poziom akceptacji (0.0 - 1.0)', fontsize=10)
+    axes[1].set_ylim(-0.05, 1.05)
+    axes[1].legend(loc='upper right', frameon=True, facecolor='white', framealpha=0.9)
+    
+    # Dopasowanie układu paneli
     plt.tight_layout()
-    filename = f"{problem_name}_run_{run_id:02d}_convergence.png"
-    plt.savefig(os.path.join(save_dir, filename), dpi=300)
+    
+    filename = f"{problem_name}_run_{run_id:02d}_diagnostics.png"
+    plt.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches='tight')
     plt.close()
+
 
 # ==========================================
 # 3. MAIN EXECUTION PIPELINE
@@ -209,7 +235,7 @@ if __name__ == '__main__':
     }
     
     RUNS_COUNT = 10
-    MAX_FES = 1_000_000  
+    MAX_FES = 5_000_000  
     STAGNATION_LIMIT = 50_000 
     OUTPUT_DIR = "pipeline_results"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -224,13 +250,10 @@ if __name__ == '__main__':
         dummy_problem = TSPProblem(paths['tsp'])
         optimal_cost = dummy_problem.evaluate(opt_nodes)
         
-        # 1. Faza Strojenia (Optuna)
-        tuning_budget = 30_000 if prob_name == 'att48' else 100_000
-        best_target, best_alpha = tune_hyperparameters(paths['tsp'], max_fes_tuning=tuning_budget, n_trials=15)
-        print(f"Użyte parametry: Target Acceptance={best_target:.4f}, Alpha={best_alpha:.5f}")
+        tuning_budget = 500_000
+        best_target, best_alpha = tune_hyperparameters(paths['tsp'], max_fes_tuning=tuning_budget, n_trials=30)
+        print(f"Used hyperparameters Target Acceptance={best_target:.4f}, Alpha={best_alpha:.5f}")
         
-        # 2. Faza Testowania (10 niezależnych uruchomień)
-        print(f"\n--- Uruchamianie {RUNS_COUNT} testów z generowaniem wykresów ---")
         all_runs_results = []
         
         for run_id in range(1, RUNS_COUNT + 1):
@@ -251,7 +274,6 @@ if __name__ == '__main__':
             )
             elapsed_time = time.perf_counter() - start_time
             
-            # Zbieranie metryk do pliku JSON
             all_runs_results.append({
                 'run_id': run_id,
                 'best_energy': run_result['best_energy'],
@@ -261,7 +283,7 @@ if __name__ == '__main__':
             
             print(f"Run {run_id:02d}/{RUNS_COUNT} | FEs: {run_result['fes_used']:>7} | Cost: {run_result['best_energy']:.0f} | Time: {elapsed_time:.2f}s")
             
-            # GENEROWANIE WYKRESU DLA KAŻDEGO ODPALENIA Z OSOBNA
+            # Generowanie zaktualizowanego, ustrukturyzowanego wykresu diagnostycznego
             generate_pipeline_plots(
                 run_history=run_result['history'],
                 problem_name=prob_name,
@@ -271,7 +293,6 @@ if __name__ == '__main__':
                 save_dir=OUTPUT_DIR
             )
                 
-        # 3. Zapis zbiorczego raportu JSON po zakończeniu serii testów dla danego problemu
         generate_json_report(all_runs_results, prob_name, MAX_FES, optimal_cost, OUTPUT_DIR)
         
     print(f"\n[✔] Pipeline zakończony. Wykresy (10 na problem) oraz pliki JSON znajdują się w: '{OUTPUT_DIR}/'")
