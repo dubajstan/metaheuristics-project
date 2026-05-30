@@ -178,5 +178,72 @@ The hyperparameters will be optimized using *[Optuna](https://optuna.org/)*.
 
 ### 3.3 Bees Algorithm
 
+The Bees Algorithm (BA) is a population-based metaheuristic inspired by the food foraging behaviour of honey bees. It was introduced by D. T. Pham, A. Ghanbarzadeh, E. Koc, S. Otri, S. Rahim and M. Zaidi in the paper *[The Bees Algorithm - A Novel Tool for Complex Optimisation Problems](https://beesalgorithmsite.altervista.org/2006_-_The_Bees_Algorithm_A_Novel_Tool_for_Complex_Optimisation_Problems.pdf)*. The algorithm combines neighbourhood search around promising solutions with random exploration of new areas of the search space.
+
+In the natural metaphor, scout bees search for food sources. The best discovered flower patches attract more recruited bees, while weaker patches receive fewer bees. At the same time, some scouts continue exploring randomly, which helps the colony avoid premature convergence. In the TSP context, a flower patch corresponds to a candidate tour, and the nectar amount is represented by the inverse quality of the tour cost. Since the objective is to minimize total route distance, lower cost means a better site.
+
+The implementation examined in this report follows this population-based structure. First, an initial population of random valid TSP tours is generated. Every tour is evaluated using the common `Problem.evaluate()` interface, which also updates the global function evaluation counter. In every cycle the population is sorted by cost, the best sites are selected, and additional neighbourhood search is performed around them. Elite sites receive more recruited bees than the remaining selected sites. The rest of the next population is completed by scout bees generated randomly.
+
+The stopping criterion is the maximum number of cost function evaluations. Therefore, the algorithm does not stop after a fixed number of cycles. Instead, before every call to the objective function, the implementation checks whether the allowed number of evaluations has already been exhausted. This makes the Bees Algorithm directly comparable with Ant Colony Optimization and Simulated Annealing implementations used in this project.
+
+The main components of the implementation are:
+
+* **Site / Solution:** A permutation of all cities representing a valid TSP tour.
+* **Fitness / Cost:** The total route distance calculated by $F(\pi)$. Lower cost corresponds to a better food source.
+* **Selected sites:** The best solutions chosen from the current population for neighbourhood search.
+* **Elite sites:** The highest quality selected sites, explored with the largest number of recruited bees.
+* **Scout bees:** Randomly generated solutions used to preserve exploration.
+
+#### Neighbourhood operator
+
+Two neighbourhood operators are supported by the implementation:
+
+* **Swap operator:** Interchanges the positions of two randomly selected cities in the permutation.
+* **2-opt operator:** Selects two positions in the tour and reverses the sub-route between them.
+
+The 2-opt operator was selected as the default operator because it is better suited to TSP instances. Reversing a segment of the route can remove crossing edges and often produces much stronger improvements than a simple swap. The implementation remains compatible with the common `TSPProblem` interface, where `get_neighbour()` performs 2-opt and `get_neighbour_swap()` keeps the swap-based operator for comparison.
+
+#### Hyperparameters
+
+The hyperparameters of the Bees Algorithm used in the implementation are:
+
+* `n_bees` - The total number of bees in the population.
+* `n_elite` - The number of best selected sites treated as elite sites.
+* `n_best` - The total number of selected sites used for neighbourhood search.
+* `elite_neigh` - The number of recruited bees assigned to every elite site.
+* `best_neigh` - The number of recruited bees assigned to every non-elite selected site.
+* `neighbourhood_depth` - The number of neighbourhood moves applied when creating a neighbouring solution.
+* `neighbourhood_type` - The selected neighbourhood operator, either `two_opt` or `swap`.
+
+For the tested `a280` instance, the following configuration was used:
+
+* `n_bees = 50`
+* `n_elite = 5`
+* `n_best = 18`
+* `elite_neigh = 80`
+* `best_neigh = 30`
+* `neighbourhood_depth = 2`
+* `neighbourhood_type = two_opt`
+* cost function evaluation limit: `50000`
+
+#### Results
+
+The algorithm was tested on the `a280` instance from the TSPLIB dataset included in the repository. The known optimal cost for this instance is `2579`. In the performed experiment, the Bees Algorithm obtained the best cost equal to `17919` after exactly `50000` function evaluations. The gap to the known optimum was therefore:
+
+$$
+\frac{17919 - 2579}{2579} \cdot 100\% \approx 594.80\%
+$$
+
+The obtained result is a valid TSP tour, but it is still far from the global optimum. This is expected for a relatively simple Bees Algorithm implementation applied to a 280-city TSP instance. The method uses stochastic exploration and local neighbourhood search, but it does not perform an exhaustive 2-opt local improvement until a local optimum is reached. Consequently, the algorithm improves the initial random population, but its final solution quality remains weaker than highly tuned or more specialized TSP heuristics.
+
+The execution history is stored by the optimizer and later processed by `BeesResultAnalyzer`. The analyzer generates plots of:
+
+* best cost over cycles,
+* average population cost,
+* cost standard deviation,
+* best cost over the number of function evaluations.
+
+The most important plot for comparison is the convergence over function evaluations, because the stopping criterion is based on the number of calls to the objective function.
+
 ---
 
