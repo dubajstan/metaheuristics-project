@@ -114,6 +114,69 @@ Hyperparamters for each instance optimization where found using *[Optuna](https:
 
 ### 3.2 Simulated Annealing
 
+Simulated Annealing (SA) is a probabilistic, single-state metaheuristic algorithm used to locate global optima within large and complex search spaces. It is particularly effective for discrete optimization problems like the TSP, where traditional gradient-based approaches fail due to non-differentiable or highly rugged objective landscapes.
+
+The algorithm is inspired by metallurgy, where a material is heated to a high temperature and then cooled slowly and systematically. Heating increases the kinetic energy of the atoms, allowing them to break out of their initial, flawed configurations. Slow cooling then permits them to settle into highly ordered, low-energy crystalline states. In the context of mathematical optimization, this physical metaphor maps directly to the algorithm's components:
+
+* **State / Solution:** A specific permutation of cities representing a valid TSP tour (π).
+* **Energy:** The value of the objective function (F(π)) evaluated at a given state. Because the objective is to minimize total distance, lower energy corresponds to a better solution.
+* **Temperature (T):** A global control parameter that dictates the degree of randomness in the search space exploration.
+
+#### The Metropolic Acceptance criterion
+
+The defining feature of Simulated Annealing is its ability to escape local optima by accepting worse solutions based on a probabilistic threshold, preventing the algorithm from stalling like a purely greedy hill-climber.
+
+When moving from a current tour with energy $E_{\text{current}}$​ to a neighboring tour with energy $E_{\text{new}}$, the change in energy is computed as: $\Delta E = E_{\text{new}} - E_{\text{current}}$
+
+Improving Moves ($\Delta E < 0$): If the neighbor solution yields a shorter path, it is always accepted.
+
+Degrading Moves ($\Delta E \ge 0$): If the neighbor solution is worse or equal, it is accepted with a probability P determined by the Metropolis criterion:
+
+$$
+P = \exp{\left( -\frac{\Delta E}{T} \right)}
+$$
+
+#### Adaptive Initial Temperature Estimation
+
+Adaptive Initial Temperature Estimation
+
+Simulated Annealing exhibits high sensitivity to the choice of the initial temperature ($T_0$). Setting $T_0$​ too high wastes an excessive number of function evaluations on a purely random walk, while setting it too low causes the algorithm to prematurely collapse into a greedy local search, getting trapped in the nearest local minimum.
+
+To eliminate arbitrary static configurations, this implementation dynamically estimates T0​ based on empirical performance testing. Before starting the optimization loop, the algorithm performs preliminary sampling:
+
+* It begins with a random solution, finds a neighbor, transitions to it, and repeats this chain for 1000 samples.
+
+* It calculates the mean value of the energy increases ($\Delta E$) for degrading moves.
+
+* It computes $T_0$​ to guarantee that the initial acceptance probability of worse solutions is approximately 80% ($\chi_0 \approx 0.80$).
+
+This relationship is derived by rearranging the Metropolis criterion:
+$$
+P(acceptance) = \exp{\left( - \frac{\overline{\Delta E}}{T_0} \right)} \approx \chi_0 \Rightarrow T_0 = -\frac{\overline{\Delta E}}{\ln{\chi_0}}
+$$
+
+#### Geometric Cooling Schedule
+
+To lower the temperature at each iteration k, a **Geometric Decrease** profile is utilized:
+$$
+T_{k+1} = \alpha T_k
+$$
+
+
+#### Neighbor Operator
+
+Two primary transition operators were evaluated during development phase:
+* **Swap operator:** Interchanges the position of two randomly chosen cities in the permutation vector.
+* **2-opt Operator:** Selects two edges from a route, removes them, reverses the sub-route between them and reconnects the edges to form a new valid cycle.
+
+Because the 2-opt operator proved significantly more efficient at discovering lower-energy configurations during preliminary testing, the swap operator was discarded from the final implementation.
+
+
+#### Hyperparameters:
+* $T_0$ - initial temperature. Based on a [Github repository](https://github.com/paololapo/Simulated_annealing_for_TSP) we decided to approxiate the initial temperature with adaptive initial temperature estimation, so it would start at around 80%.
+* $\alpha$ - cooling rate. Needs to strictly be in range (0, 1). Typically is set to be in range (0.95, 0.9999999999) depending on the problem size.
+
+
 ### 3.3 Bees Algorithm
 
 ---
