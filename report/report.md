@@ -138,8 +138,6 @@ $$
 
 #### Adaptive Initial Temperature Estimation
 
-Adaptive Initial Temperature Estimation
-
 Simulated Annealing exhibits high sensitivity to the choice of the initial temperature ($T_0$). Setting $T_0$​ too high wastes an excessive number of function evaluations on a purely random walk, while setting it too low causes the algorithm to prematurely collapse into a greedy local search, getting trapped in the nearest local minimum.
 
 To eliminate arbitrary static configurations, this implementation dynamically estimates T0​ based on empirical performance testing. Before starting the optimization loop, the algorithm performs preliminary sampling:
