@@ -28,7 +28,7 @@ Two types of TSP problem can be pointed:
 * STSP - Symmetric Travelling Salesman Problem
 * ATSP - Asymmetric Travelling Salesman Problem
 
-In the Symmetric Travelling Salesman Problem (STSP), the weight of edge (A,B) never differs from weight of (B,A) edge for every pair of nodes. In the Asymmetric Travelling Salesman Problem (ATSP), however, these distances may vary. In this report only STSP is considered and any reference to TSP refers to STSP.
+In the Symmetric Travelling Salesman Problem (STSP), the weight of edge $(i,j)$ never differs from weight of $(j,i)$ edge for every pair of nodes. In the Asymmetric Travelling Salesman Problem (ATSP), however, these distances may vary. In this report only STSP is considered and any reference to TSP refers to STSP.
 
 ### 1.2. Problem complexity
 A defining characteristic of the TSP is the fact that it is the NP-hard problem - any proposed solution, specific sequence of nodes, can be efficiently verified in polynomial time. Nonetheless, no algorithm has been discovered that can solve the TSP in polynomial time. Furthermore, TSP holds a significant place in computational complexity - every single NP problem can be reduced to an instance of TSP in polynomial time.
@@ -43,7 +43,7 @@ $$\frac{19!}{2} \approx 6 \times 10^{16}$$
 
 As a result, finding an exact optimal solution through brute-force computation becomes practically impossible as the number of locations increases. Way of finding near-optimal solutions to the TSP is applying metaheuristic algorithms.
 
-### 1.3 A graphical example of the TSP instance and optimal solution
+### 1.3 Visualisation of the TSP instance and optimal solution
 
 <table align = center>
   <tr>
@@ -55,7 +55,7 @@ As a result, finding an exact optimal solution through brute-force computation b
     <td align = center>
       <img src = "./images/GLPK_solution_of_a_travelling_salesman_problem.png" alt = "Solution of the TSP instance" width = 400 />
       <br />
-      <em>Solution of the TSP instance</em>
+      <em>Solution of the TSP instance.</em>
     </td>
   </tr>
 </table>
@@ -68,3 +68,20 @@ Sources:
 * https://en.wikipedia.org/wiki/Travelling_salesman_problem#/media/File:Illustration_of_an_unsolved_travelling_salesman_problem.svg
 
 ---
+
+## 2. Solution representation
+
+The TSP solution for $n$ vertices can be represented as a permutation $\pi$ of the vertex set, where $v_i$ denotes the $i$-th vertex in the sequence:
+$$\pi = (v_1, v_2, \dots, v_n)$$
+
+The weights of edges  - distances - are retrieved from a distance matrix $D$, where each element $d_{i,j}$ represents the cost of traveling from vertex $i$ to vertex $j$:
+$$D = [d_{i,j}]_{n \times n}$$
+
+The objective of the optimization is to find an optimal tour $\pi^*$ that minimizes the cost function $F(\pi)$. This function calculates the sum of distances between consecutive vertices and includes the distance from the last vertex back to the first one to close the cycle:
+$$F(\pi) = \sum_{i=1}^{n-1} d_{v_i, v_{i+1}} + d_{v_n, v_1}$$
+
+$$\pi^* = \arg\min_{\pi \in \Pi} F(\pi)$$
+where $\Pi$ denotes the set of all possible permutations  - valid tours.
+
+---
+
