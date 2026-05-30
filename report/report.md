@@ -110,6 +110,8 @@ The hyperparameters of the ant-cycle optimization algorithm:
 
 Additionalny, in the implemention examined in this report, *cost function evaluation limit* and *cycles without best cost improvement limit* are to be set.
 
+Hyperparamters for each instance optimization where found using *[Optuna](https://optuna.org/)*.
+
 ### 3.2 Simulated Annealing
 
 ### 3.3 Bees Algorithm
