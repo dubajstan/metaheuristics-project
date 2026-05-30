@@ -207,23 +207,23 @@ The 2-opt operator was selected as the default operator because it is better sui
 
 The hyperparameters of the Bees Algorithm used in the implementation are:
 
-* `n_bees` - The total number of bees in the population.
-* `n_elite` - The number of best selected sites treated as elite sites.
-* `n_best` - The total number of selected sites used for neighbourhood search.
-* `elite_neigh` - The number of recruited bees assigned to every elite site.
-* `best_neigh` - The number of recruited bees assigned to every non-elite selected site.
-* `neighbourhood_depth` - The number of neighbourhood moves applied when creating a neighbouring solution.
-* `neighbourhood_type` - The selected neighbourhood operator, either `two_opt` or `swap`.
+* $n$ - The total number of bees in the population (`n_bees`).
+* $n_{elite}$ - The number of best selected sites treated as elite sites (`n_elite`).
+* $n_{best}$ - The total number of selected sites used for neighbourhood search (`n_best`).
+* $r_{elite}$ - The number of recruited bees assigned to every elite site (`elite_neigh`).
+* $r_{best}$ - The number of recruited bees assigned to every non-elite selected site (`best_neigh`).
+* $d$ - The number of neighbourhood moves applied when creating a neighbouring solution (`neighbourhood_depth`).
+* $O$ - The selected neighbourhood operator, either 2-opt or swap (`neighbourhood_type`).
 
 For the tested `a280` instance, the following configuration was used:
 
-* `n_bees = 50`
-* `n_elite = 5`
-* `n_best = 18`
-* `elite_neigh = 80`
-* `best_neigh = 30`
-* `neighbourhood_depth = 2`
-* `neighbourhood_type = two_opt`
+* $n = 50$
+* $n_{elite} = 5$
+* $n_{best} = 18$
+* $r_{elite} = 80$
+* $r_{best} = 30$
+* $d = 2$
+* $O = 2\text{-opt}$
 * cost function evaluation limit: `50000`
 
 #### Results
@@ -234,7 +234,9 @@ $$
 \frac{17919 - 2579}{2579} \cdot 100\% \approx 594.80\%
 $$
 
-The obtained result is a valid TSP tour, but it is still far from the global optimum. This is expected for a relatively simple Bees Algorithm implementation applied to a 280-city TSP instance. The method uses stochastic exploration and local neighbourhood search, but it does not perform an exhaustive 2-opt local improvement until a local optimum is reached. Consequently, the algorithm improves the initial random population, but its final solution quality remains weaker than highly tuned or more specialized TSP heuristics.
+The obtained result is a valid TSP tour, but it is still far from the global optimum. This should not be interpreted as an error in the 2-opt operator itself. In this implementation, 2-opt is used as a stochastic neighbourhood generator: a recruited bee performs a limited number of random segment reversals and the best sampled neighbour is retained. The algorithm does not perform a full deterministic 2-opt local search until no improving move exists.
+
+The relatively weak result is also caused by the way the evaluation budget is distributed. Simulated Annealing follows a single trajectory, so almost all function evaluations are spent on improving one current solution. The Bees Algorithm divides the same type of budget between many sites, elite recruits, non-elite recruits, and random scouts. As a result, under the limit of `50000` function evaluations, each individual tour receives only limited refinement. Consequently, the algorithm improves the initial random population, but its final solution quality remains weaker than highly tuned or more specialized TSP heuristics.
 
 The execution history is stored by the optimizer and later processed by `BeesResultAnalyzer`. The analyzer generates plots of:
 
