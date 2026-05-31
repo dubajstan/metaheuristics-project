@@ -240,7 +240,7 @@ For the performed experiments, the following configuration was used:
 The algorithm was tested on three TSPLIB instances included in the repository: `att48`, `eil101` and `a280`. For every instance, 10 independent runs were performed with a limit of `50000` function evaluations. The known optimal tours were loaded from the `.opt.tour` files and evaluated with the same distance matrix as the tested solutions.
 
 $$
-RPD = \frac{F_{\text{best}} - F^{*}}{F^{*}} \cdot 100\%
+\text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
 $$
 
 where $F^{*}$ is the known optimal cost. The obtained results were:
