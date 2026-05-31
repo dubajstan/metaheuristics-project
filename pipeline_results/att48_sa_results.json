@@ -2,97 +2,97 @@
     "algorithm": "Simulated Annealing",
     "problem_name": "att48",
     "runs_count": 10,
-    "max_fes": 5000000,
+    "max_fes": 300000,
     "optimal_cost": 10628.0,
     "summary_statistics": {
-        "best_result": 10648.0,
-        "best_result_rpd_percentage": 0.18818216033120058,
-        "average_result": 10831.8,
-        "average_result_rpd_percentage": 1.9175762137749341,
-        "average_time_seconds": 1.2725428568999633,
-        "average_fes_count": 95881.3,
-        "std_dev_rpd_percentage": 0.8317757923831542
+        "best_result": 10628.0,
+        "best_result_rpd_percentage": 0.0,
+        "average_result": 10755.3,
+        "average_result_rpd_percentage": 1.1977794505080916,
+        "average_time_seconds": 5.309153333799623,
+        "average_fes_count": 300000.0,
+        "std_dev_rpd_percentage": 0.8524573972680518
     },
     "raw_data_from_all_runs": [
         {
             "run_id": 1,
-            "best_cost": 10648.0,
-            "rpd_percentage": 0.18818216033120058,
-            "time_seconds": 1.1770715189995826,
-            "fes_used": 89269,
-            "stagnation_triggered": true
+            "best_cost": 10725.0,
+            "rpd_percentage": 0.912683477606323,
+            "time_seconds": 5.146064595999633,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 2,
-            "best_cost": 10846.0,
-            "rpd_percentage": 2.0511855476100864,
-            "time_seconds": 1.214410233002127,
-            "fes_used": 92576,
-            "stagnation_triggered": true
+            "best_cost": 10906.0,
+            "rpd_percentage": 2.6157320286036883,
+            "time_seconds": 5.342193213000428,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 3,
-            "best_cost": 10912.0,
-            "rpd_percentage": 2.6721866767030487,
-            "time_seconds": 1.3220787179998297,
-            "fes_used": 100818,
-            "stagnation_triggered": true
+            "best_cost": 10821.0,
+            "rpd_percentage": 1.8159578471960858,
+            "time_seconds": 5.276599956998325,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 4,
-            "best_cost": 10894.0,
-            "rpd_percentage": 2.502822732404968,
-            "time_seconds": 1.2863031560009404,
-            "fes_used": 96272,
-            "stagnation_triggered": true
+            "best_cost": 10738.0,
+            "rpd_percentage": 1.0350018818216034,
+            "time_seconds": 5.358050359000117,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 5,
-            "best_cost": 10924.0,
-            "rpd_percentage": 2.785095972901769,
-            "time_seconds": 1.3613475839993043,
-            "fes_used": 103695,
-            "stagnation_triggered": true
+            "best_cost": 10653.0,
+            "rpd_percentage": 0.23522770041400076,
+            "time_seconds": 5.3965636789998825,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 6,
-            "best_cost": 10809.0,
-            "rpd_percentage": 1.7030485509973654,
-            "time_seconds": 1.3153214320009283,
-            "fes_used": 97494,
-            "stagnation_triggered": true
+            "best_cost": 10780.0,
+            "rpd_percentage": 1.4301844185171246,
+            "time_seconds": 5.254176505999567,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 7,
-            "best_cost": 10955.0,
-            "rpd_percentage": 3.0767783214151296,
-            "time_seconds": 1.2617532209987985,
-            "fes_used": 96192,
-            "stagnation_triggered": true
+            "best_cost": 10758.0,
+            "rpd_percentage": 1.223184042152804,
+            "time_seconds": 5.310272169999735,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 8,
-            "best_cost": 10772.0,
-            "rpd_percentage": 1.3549115543846444,
-            "time_seconds": 1.3018550380002125,
-            "fes_used": 95074,
-            "stagnation_triggered": true
+            "best_cost": 10658.0,
+            "rpd_percentage": 0.2822732404968009,
+            "time_seconds": 5.336232875999485,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 9,
-            "best_cost": 10763.0,
-            "rpd_percentage": 1.2702295822356042,
-            "time_seconds": 1.2633911949997128,
-            "fes_used": 96440,
-            "stagnation_triggered": true
+            "best_cost": 10628.0,
+            "rpd_percentage": 0.0,
+            "time_seconds": 5.479694420999294,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         },
         {
             "run_id": 10,
-            "best_cost": 10795.0,
-            "rpd_percentage": 1.571321038765525,
-            "time_seconds": 1.2218964729981963,
-            "fes_used": 90983,
-            "stagnation_triggered": true
+            "best_cost": 10886.0,
+            "rpd_percentage": 2.4275498682724876,
+            "time_seconds": 5.191685560999758,
+            "fes_used": 300000,
+            "stagnation_triggered": false
         }
     ]
 }
