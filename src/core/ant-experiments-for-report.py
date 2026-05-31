@@ -74,7 +74,7 @@ def run_experiments_for_report(problem_name: str, max_fes: int, start_seed : int
         execution_times.append(exec_time)
         
 
-        fes_counts.append(int(optimizer.problem.fe_count))
+        fes_counts.append(int(optimizer.fes_total_count))
 
         print(f'Run {i + 1} / {runs} finished in {exec_time}')
         
