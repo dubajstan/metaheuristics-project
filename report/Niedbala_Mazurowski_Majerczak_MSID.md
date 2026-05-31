@@ -445,4 +445,4 @@ The most important practical conclusion is that the neighbourhood operator and i
 
 ### 9. Repository
 
-* [Github repository](https://github.com/dubajstan/metaheuristics-project/blob/Bees_Algorithm/src/algorithms/BA.py)
+* [Github repository](https://github.com/dubajstan/metaheuristics-project)
