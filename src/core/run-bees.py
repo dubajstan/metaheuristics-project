@@ -47,13 +47,16 @@ def run_bees() -> None:
     problem = TSPProblem(file_path=problem_path, seed=42)
     problem.file_path = problem_path
     hyperparameters = BeesHyperparameters(
-        n_bees=50,
-        n_elite=5,
-        n_best=18,
-        elite_neigh=80,
-        best_neigh=30,
-        neighbourhood_depth=2,
+        n_bees=12,
+        n_elite=2,
+        n_best=4,
+        elite_neigh=900,
+        best_neigh=220,
+        neighbourhood_depth=1,
         neighbourhood_type="two_opt",
+        greedy_initial_sites=4,
+        greedy_start_candidates=0,
+        greedy_candidate_list_size=1,
     )
 
     optimizer = BeesOptimizer(

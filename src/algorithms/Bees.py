@@ -19,6 +19,9 @@ class BeesHyperparameters:
     best_neigh: int = 10
     neighbourhood_depth: int = 1
     neighbourhood_type: str = "two_opt"
+    greedy_initial_sites: int = 8
+    greedy_start_candidates: int = 32
+    greedy_candidate_list_size: int = 1
 
     def __post_init__(self) -> None:
         if self.n_bees <= 0:
@@ -37,6 +40,14 @@ class BeesHyperparameters:
             raise ValueError("neighbourhood_depth must be greater than 0.")
         if self.neighbourhood_type not in {"two_opt", "swap"}:
             raise ValueError("neighbourhood_type must be either 'two_opt' or 'swap'.")
+        if self.greedy_initial_sites < 0:
+            raise ValueError("greedy_initial_sites cannot be negative.")
+        if self.greedy_initial_sites > self.n_bees:
+            raise ValueError("greedy_initial_sites cannot be greater than n_bees.")
+        if self.greedy_start_candidates < 0:
+            raise ValueError("greedy_start_candidates cannot be negative.")
+        if self.greedy_candidate_list_size <= 0:
+            raise ValueError("greedy_candidate_list_size must be greater than 0.")
 
 
 class BeesOptimizer:
@@ -83,6 +94,95 @@ class BeesOptimizer:
         solution = self.problem.create_random_solution()
         return self._evaluate(solution)
 
+    def _get_distance_matrix(self) -> np.ndarray | None:
+        if not hasattr(self.problem, "distance_matrix"):
+            return None
+
+        matrix = self.problem.distance_matrix
+        if matrix is None:
+            return None
+        return np.asarray(matrix)
+
+    def _rotate_to_start_node(self, solution: Solution) -> Solution:
+        start_node = int(getattr(self.problem, "start_node", 0))
+        positions = np.where(solution == start_node)[0]
+        if len(positions) == 0:
+            return np.copy(solution)
+        return np.roll(solution, -int(positions[0])).astype(np.int32, copy=False)
+
+    def _create_greedy_solution(
+        self,
+        start_city: int,
+        distance_matrix: np.ndarray,
+    ) -> Solution:
+        num_cities = len(distance_matrix)
+        unvisited = np.ones(num_cities, dtype=bool)
+        unvisited[start_city] = False
+
+        tour = np.empty(num_cities, dtype=np.int32)
+        tour[0] = start_city
+        current_city = start_city
+
+        for position in range(1, num_cities):
+            candidates = np.flatnonzero(unvisited)
+            distances = distance_matrix[current_city, candidates]
+
+            if self.hyperparameters.greedy_candidate_list_size == 1:
+                next_city = int(candidates[np.argmin(distances)])
+            else:
+                nearest_order = np.argsort(distances, kind="stable")
+                list_size = min(
+                    self.hyperparameters.greedy_candidate_list_size,
+                    len(nearest_order),
+                )
+                nearest_candidates = candidates[nearest_order[:list_size]]
+                nearest_distances = distances[nearest_order[:list_size]]
+                weights = 1.0 / np.maximum(nearest_distances, 1e-12)
+                weights = weights / np.sum(weights)
+                next_city = int(self.problem.rng.choice(nearest_candidates, p=weights))
+
+            tour[position] = next_city
+            unvisited[next_city] = False
+            current_city = next_city
+
+        return self._rotate_to_start_node(tour)
+
+    def _create_greedy_sites(self) -> list[EvaluatedSolution]:
+        params = self.hyperparameters
+        if params.greedy_initial_sites == 0:
+            return []
+
+        distance_matrix = self._get_distance_matrix()
+        if distance_matrix is None:
+            return []
+
+        num_cities = len(distance_matrix)
+        if params.greedy_start_candidates == 0 or params.greedy_start_candidates >= num_cities:
+            start_cities = np.arange(num_cities)
+        else:
+            required = params.greedy_start_candidates
+            start_node = int(getattr(self.problem, "start_node", 0))
+            other_cities = np.array(
+                [city for city in range(num_cities) if city != start_node],
+                dtype=np.int32,
+            )
+            self.problem.rng.shuffle(other_cities)
+            sampled = other_cities[: max(0, required - 1)]
+            start_cities = np.concatenate(([start_node], sampled))
+
+        candidates: list[EvaluatedSolution] = []
+        for start_city in start_cities:
+            if not self._has_evaluation_budget():
+                break
+
+            solution = self._create_greedy_solution(int(start_city), distance_matrix)
+            evaluated_site = self._evaluate(solution)
+            if evaluated_site is not None:
+                candidates.append(evaluated_site)
+
+        candidates.sort(key=lambda site: site[0])
+        return candidates[: params.greedy_initial_sites]
+
     def _create_neighbour(self, solution: Solution) -> Solution:
         neighbour = np.copy(solution)
         for _ in range(self.hyperparameters.neighbourhood_depth):
@@ -115,7 +215,7 @@ class BeesOptimizer:
         return self.problem.get_neighbour(solution)
 
     def _initialize_population(self) -> list[EvaluatedSolution]:
-        population: list[EvaluatedSolution] = []
+        population = self._create_greedy_sites()
 
         while len(population) < self.hyperparameters.n_bees:
             site = self._create_random_site()
@@ -127,17 +227,22 @@ class BeesOptimizer:
 
     def _search_site(self, site: EvaluatedSolution, recruits: int) -> EvaluatedSolution:
         best_cost, best_solution = site[0], np.copy(site[1])
+        current_cost, current_solution = best_cost, np.copy(best_solution)
 
         for _ in range(recruits):
             if not self._has_evaluation_budget():
                 break
 
-            neighbour = self._create_neighbour(site[1])
+            neighbour = self._create_neighbour(current_solution)
             evaluated_neighbour = self._evaluate(neighbour)
             if evaluated_neighbour is None:
                 break
 
             neighbour_cost, neighbour_solution = evaluated_neighbour
+            if neighbour_cost < current_cost:
+                current_cost = neighbour_cost
+                current_solution = np.copy(neighbour_solution)
+
             if neighbour_cost < best_cost:
                 best_cost = neighbour_cost
                 best_solution = np.copy(neighbour_solution)
