@@ -243,7 +243,8 @@ $$
 \text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
 $$
 
-where $F^{*}$ is the known optimal cost. The obtained results were:
+Where $F_{\text{best}}$ is the best cost found by the algorithm and $F_{\text{opt}}$ is the known optimal cost for the given instance.
+The obtained results were:
 
 | Instance | Optimum | Best result | Best RPD | Average result | Average RPD |
 | --- | ---: | ---: | ---: | ---: | ---: |
