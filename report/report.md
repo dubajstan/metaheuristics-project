@@ -381,7 +381,7 @@ The following charts present the results for the Bees Algorithm. The `eil101` in
 <table align="center">
   <tr>
     <td align="center">
-      <img src="../plots/eil101/eil101_01_convergence.png" alt="Convergence chart for Bees Algorithm on eil101" width="700" />
+      <img src="./images/eil101_01_convergence.png" alt="Best cost convergence for Bees Algorithm on eil101" width="700" />
       <br />
       <em>Figure 3: Best cost convergence for Bees Algorithm on eil101 across independent runs.</em>
     </td>
@@ -389,7 +389,7 @@ The following charts present the results for the Bees Algorithm. The `eil101` in
 
   <tr>
     <td align="center">
-      <img src="../plots/eil101/eil101_02_population_average.png" alt="Average population cost chart for Bees Algorithm on eil101" width="700" />
+      <img src="./images/eil101_02_population_average.png" alt="Average population cost for Bees Algorithm on eil101" width="700" />
       <br />
       <em>Figure 4: Average population cost and best cost for the best Bees Algorithm run on eil101.</em>
     </td>
@@ -397,7 +397,7 @@ The following charts present the results for the Bees Algorithm. The `eil101` in
 
   <tr>
     <td align="center">
-      <img src="../plots/eil101/eil101_03_population_std.png" alt="Population standard deviation chart for Bees Algorithm on eil101" width="700" />
+      <img src="./images/eil101_03_population_std.png" alt="Population cost standard deviation for Bees Algorithm on eil101" width="700" />
       <br />
       <em>Figure 5: Population cost standard deviation for the best Bees Algorithm run on eil101.</em>
     </td>
