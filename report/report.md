@@ -394,14 +394,6 @@ The following charts present the results for the Bees Algorithm. The `eil101` in
       <em>Figure 4: Average population cost and best cost for the best Bees Algorithm run on eil101.</em>
     </td>
   </tr>
-
-  <tr>
-    <td align="center">
-      <img src="./images/eil101_03_population_std.png" alt="Population cost standard deviation for Bees Algorithm on eil101" width="700" />
-      <br />
-      <em>Figure 5: Population cost standard deviation for the best Bees Algorithm run on eil101.</em>
-    </td>
-  </tr>
 </table>
 
 The convergence plot confirms that the algorithm quickly moves from the constructive and random initial population to significantly shorter tours. The strongest improvements usually occur during the first part of the run, when recruited bees intensively explore the neighbourhoods of the best selected sites. Later improvements become smaller, which is expected for a local-search-oriented metaheuristic operating close to a local optimum.
