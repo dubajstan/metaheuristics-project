@@ -173,6 +173,7 @@ Because the 2-opt operator proved significantly more efficient at discovering lo
 #### Hyperparameters:
 * $T_0$ - initial temperature. Based on a [Github repository](https://github.com/paololapo/Simulated_annealing_for_TSP) we decided to approxiate the initial temperature with adaptive initial temperature estimation.
 * $\alpha$ - cooling rate. Needs to strictly be in range (0, 1). Typically is set to be in range (0.95, 0.9999999999) depending on the problem size.
+* Function evaluations was set to 3 000 000.
 
 The hyperparameters will be optimized using *[Optuna](https://optuna.org/)*.
 
@@ -235,36 +236,6 @@ For the performed experiments, the following configuration was used:
 * $k = 1$
 * cost function evaluation limit: `50000`
 
-#### Results
-
-The algorithm was tested on three TSPLIB instances included in the repository: `att48`, `eil101` and `a280`. For every instance, 10 independent runs were performed with a limit of `50000` function evaluations. The known optimal tours were loaded from the `.opt.tour` files and evaluated with the same distance matrix as the tested solutions.
-
-$$
-\text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
-$$
-
-Where $F_{\text{best}}$ is the best cost found by the algorithm and $F_{\text{opt}}$ is the known optimal cost for the given instance.
-The obtained results were:
-
-| Instance | Optimum | Best result | Best RPD | Average result | Average RPD |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `att48` | 10628 | 10711 | 0.78% | 10857.0 | 2.15% |
-| `eil101` | 629 | 647 | 2.86% | 655.5 | 4.21% |
-| `a280` | 2579 | 2763 | 7.13% | 2815.7 | 9.18% |
-
-The strongest result on the main `a280` instance was `2763`, which corresponds to a `7.13%` gap to the known optimum `2579`. The average result across 10 runs was `2815.7`, with an average relative percentage deviation of `9.18%`. This is a significant improvement over a purely random initial population, because the nearest-neighbour construction gives the algorithm good starting sites before the recruited bees begin local refinement.
-
-The results remain slightly worse than the best Simulated Annealing runs, but the gap is expected. Simulated Annealing follows one solution trajectory and can spend almost the whole budget on repeatedly improving a single tour. The Bees Algorithm divides the same evaluation limit between constructive scouts, several selected sites, elite neighbourhood searches, non-elite neighbourhood searches and random scouts. This produces stronger exploration and stable behaviour across runs, but each individual tour receives fewer local improvement attempts than in a single-state method.
-
-The execution history is stored by the optimizer and processed by the Bees pipeline script. It generates JSON summaries and plots of:
-
-* best cost over cycles,
-* average population cost,
-* cost standard deviation,
-* best cost over the number of function evaluations.
-
-The most important plot for comparison is the convergence over function evaluations, because the stopping criterion is based on the number of calls to the objective function.
-
 ---
 
 ## 4. Experiments
@@ -296,6 +267,10 @@ The selected algorithms differ significantly from each other, making it impossib
 
 **Ant System** - the maximum number of cycles without improvement was set to 75, with a limit of 16 000 allowed cost function evaluations.
 
+**Simulated Annealing** - the maximum number of iterations without improvement was disabled, we wanted to see how much can this algorithm improve solution, and later analyse the plots for stagnation.
+
+**Bees Algorithm** - the maximum number of iterations like in the Simulated Annealing.
+
 ---
 
 ## 5. Obtained Comparative results
@@ -307,7 +282,7 @@ Optimal cost: 10628.0
 | Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 10965.0 | 3.17% | 11225.8 | 5.62% | 3.06 | 1.36%|
-| `Simulated Annealing` | 10648.0 | 0.19% | 10831.8 | 1.92% | 1.27 | 0.83%|
+| `Simulated Annealing` | 10628.0 | 0.00% | 10755.3 | 1.20% | 5.31 | 0.85%|
 | `Bees Algorithm` | 10711.0 | 0.78% | 10857.0 | 2.15% | 2.57 | 1.15% |
 
 
@@ -318,7 +293,7 @@ Optimal cost: 629.0
 | Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 671.0 | 6.68% | 684.2 | 8.78% | 12.61 | 1.25%|
-| `Simulated Annealing` | 658.0 | 4.61% | 666.8 | 6.01% | 2.47 | 1.09%|
+| `Simulated Annealing` | 639.0 | 1.59% | 655.4 | 4.20% | 7.78 | 1.35%|
 | `Bees Algorithm` | 647.0 | 2.86% | 654.8 | 4.10% | 3.14 | 0.77% |
 
 
@@ -329,7 +304,7 @@ Optimal cost: 2579.0
 | Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 2964.0 | 14.93% | 2991.2 | 15.98% | 55.51 | 0.65 %|
-| `Simulated Annealing` | 2768.0 | 7.32% | 2883.2 | 11.79% | 7.50 | 2.19 %|
+| `Simulated Annealing` | 2794.0 | 8.34% | 2928.4 | 13.55% | 8.55 | 2.95%|
 | `Bees Algorithm` | 2719.0 | 5.43% | 2770.0 | 7.41% | 3.39 | 0.76% |
 
 ---
@@ -367,14 +342,50 @@ The following charts present the results for a single optimization run of the ei
 
 ### 6.2 Simulated annealing
 
+The implemented Simulated Annealing (SA) algorithm, enhanced by a 2-opt operator and adaptive initial temperature estimation, demonstrates high efficiency in solving small to medium-sized instances of the TSP. A key highlight of the algorithm's performance was observed in the smallest instance (att48), where SA was the only tested metaheuristic to successfully discover the global optimum, achieving a Relative Percentage Deviation (RPD) of 0.00%. While the solution quality naturally decreases as the complexity of the search space grows, the final configurations remain highly satisfactory.
+
+Experiments clearly indicate that despite its simplicity and single-state nature—relying on the trajectory of a single solution rather than evolving a population—Simulated Annealing can effectively compete with more complex metaheuristics. A critical factor in this capability was discarding the basic Swap operator in favor of the 2-opt move. The 2-opt operator generates a significantly less rugged fitness landscape, making it easier to systematically eliminate crossing edges. This approach is exceptionally well-suited for scenarios where the objective function is computationally cheap, as SA requires a high number of iterations to systematically cool the system and reach convergence.
+
+The integration of Adaptive Initial Temperature Estimation paired with a finely tuned Geometric Cooling Rate (α) was a decisive factor in stabilizing the algorithm and maximizing its solution quality across varying instance sizes. Based on the low standard deviation (<3%) among all experiments, we can say that SA is stable, but the least stable in comparison to the other algorithms.
+
+Potential for Early Termination in Large Instances (`a280`): An analysis of the convergence trajectory for the `a280` instance reveals that the vast majority of the cost reduction occurs rapidly during the early and middle stages of the cooling cycle. Once the algorithm enters the lower temperature zones, the optimization curve flattens significantly, spending a considerable portion of the evaluation budget on minor, marginal refinements. This implies that for large-scale instances, the execution could be terminated much earlier—either by implementing much faster stagnation threshold.
+
+The following charts present the results for the Simulated Annealing algorithm on 3 best runs for each problem.
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="./images/att48_run_09_diagnostics.png" alt="Optimization cost chart and acceptance rate for att48" width="700" />
+      <br />
+      <em>Figure 1: Optimization route cost and acceptance rate for SA on att48 instance.</em>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="./images/eil101_run_04_diagnostics.png" alt="Acceptance rate chart for ail101" width="700" />
+      <br />
+      <em>Figure 2: Optimization route cost and acceptance rate for SA on eil101 instance.</em>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="./images/a280_run_08_diagnostics.png" alt="Acceptance rate cchart a280" width="700" />
+      <br />
+      <em>Figure 3: Optimization route cost and acceptance rate for SA on a280 instance.</em>
+    </td>
+  </tr>
+</table>
+
 
 ### 6.3 Bees Algorithm
 
 The final Bees Algorithm implementation finds valid TSP tours and consistently improves the quality of the initial population. The algorithm does not attempt to solve the problem exactly; instead, it combines constructive initialization, population-based selection and local 2-opt exploration. The constructive nearest-neighbour phase is important because it prevents the initial population from being dominated by very poor random tours. These constructed tours are still evaluated through the same objective function as every other solution, so they are included in the function evaluation budget.
 
-The obtained results can be considered strong for a relatively simple population-based implementation. For `att48`, the best RPD was `0.78%`, which is very close to the known optimum. For `eil101`, the Bees Algorithm obtained the best result among all three compared algorithms, with a best RPD of `2.86%` and an average RPD of `4.21%`. For the largest `a280` instance, the best result was `2763`, which gives a `7.13%` gap to the optimum `2579`. The average RPD on `a280` was `9.18%`, which is also better than the average result obtained by Simulated Annealing in the performed experiments.
+The obtained results can be considered strong for a relatively simple population-based implementation. For `att48`, the best RPD was `0.78%`, which is very close to the known optimum. For `eil101`, the Bees Algorithm obtained the second best result among all three compared algorithms, with a best RPD of `2.86%` and an average RPD of `4.10%`. For the largest `a280` instance, the best result was `2719`, which gives a `5.43%` gap to the optimum `2579`. The average RPD on `a280` was `7.41%`, which is also better than the average result obtained by Simulated Annealing in the performed experiments.
 
-The standard deviation of the RPD remains low for all tested instances: `1.15%` for `att48`, `0.82%` for `eil101` and `0.89%` for `a280`. This indicates that the final configuration is stable and does not rely on a single lucky run. The execution time also scales favourably with the instance size. Even for `a280`, the average execution time was `2.77` seconds, which is much lower than the Ant System execution time and lower than the average time of Simulated Annealing in the comparative experiment.
+The standard deviation of the RPD remains low for all tested instances: `1.15%` for `att48`, `0.77%` for `eil101` and `0.76%` for `a280`. This indicates that the final configuration is stable and does not rely on a single lucky run. The execution time also scales favourably with the instance size. Even for `a280`, the average execution time was `3.39` seconds, which is much lower than the Ant System execution time and lower than the average time of Simulated Annealing in the comparative experiment.
 
 The following charts present the results for the Bees Algorithm. The `eil101` instance is shown to keep the presentation consistent with the Ant System example above.
 
@@ -406,11 +417,11 @@ The standard deviation plot confirms that the population does not collapse into 
 
 The three algorithms represent different search strategies. Ant System is a constructive population algorithm based on pheromone trails. Simulated Annealing is a single-solution trajectory method controlled by temperature and probabilistic acceptance of worse moves. Bees Algorithm is a population-based local search method that combines scout exploration with intensified search around the best selected sites. Because of these structural differences, the comparison should consider not only the final cost, but also stability, execution time, scalability and how the evaluation budget is spent.
 
-In terms of solution quality, Simulated Annealing and Bees Algorithm clearly outperform the basic Ant System implementation on the tested instances. On `att48`, Simulated Annealing achieved the best result (`0.19%` RPD), while Bees Algorithm was very close (`0.78%` RPD). Ant System was weaker on this instance, with a best RPD of `3.17%`. On `eil101`, Bees Algorithm obtained the best result (`2.86%` RPD), followed by Simulated Annealing (`4.61%`) and Ant System (`6.68%`). On `a280`, Bees Algorithm again achieved the best result in this experiment (`7.13%` RPD), slightly ahead of Simulated Annealing (`7.32%`) and clearly ahead of Ant System (`14.93%`).
+In terms of solution quality, Simulated Annealing and Bees Algorithm clearly outperform the basic Ant System implementation on the tested instances. On `att48`, Simulated Annealing achieved the best result (`0.00%` RPD), while Bees Algorithm was very close (`0.78%` RPD). Ant System was weaker on this instance, with a best RPD of `3.17%`. On `eil101`, Simulated Annealing obtained the best result (`1.59%` RPD), followed by Bees Algorithm (`2.86%`) and Ant System (`6.68%`). On `a280`, Bees Algorithm again achieved the best result in this experiment (`5.43%` RPD), slightly ahead of Simulated Annealing (`8.34%`) and clearly ahead of Ant System (`14.93%`).
 
-The average results lead to the same general conclusion. Bees Algorithm had the best average RPD on `eil101` and `a280`, while Simulated Annealing had the best average RPD on `att48`. This suggests that the constructive nearest-neighbour initialization and intensive 2-opt exploitation used by Bees Algorithm become especially useful as the instance size increases. Ant System remained the weakest in terms of solution quality, especially for the largest instance, which is expected for a simple ant-cycle implementation without additional local improvement.
+The average results lead to the similar general conclusion. Bees Algorithm had the best average RPD on `eil101` and `a280`, while Simulated Annealing had the best average RPD on `att48`. This suggests that the constructive nearest-neighbour initialization and intensive 2-opt exploitation used by Bees Algorithm become especially useful as the instance size increases. Ant System remained the weakest in terms of solution quality, especially for the largest instance, which is expected for a simple ant-cycle implementation without additional local improvement.
 
-Stability is also important. Ant System had the lowest RPD standard deviation on `a280` (`0.65%`), but this stability came with consistently worse solutions. Bees Algorithm combined strong solution quality with low variance: its RPD standard deviation was below `1.2%` for all tested instances. Simulated Annealing was very strong, but its variance increased on the largest instance (`2.19%` RPD standard deviation), which indicates higher sensitivity to the stochastic trajectory and cooling process.
+Stability is also important. Ant System had the lowest RPD standard deviation on `a280` (`0.65%`), but this stability came with consistently worse solutions. Bees Algorithm combined strong solution quality with low variance: its RPD standard deviation was below `1.2%` for all tested instances. Simulated Annealing was very strong, but its variance increased on the largest instance (`2.95%` RPD standard deviation), which indicates higher sensitivity to the randomness and cooling process.
 
 Execution time shows the clearest practical difference. Ant System required the most time, especially on `a280`, where the average execution time was `55.51` seconds. This is caused by repeatedly constructing full tours for many ants and updating pheromone information. Simulated Annealing was much faster than Ant System, but it still used a larger number of function evaluations on average due to its long single-trajectory search and stagnation criterion. Bees Algorithm was the fastest on the largest instance in the performed tests, with an average time of `2.77` seconds for `a280`, while still obtaining the best average RPD.
 
@@ -426,8 +437,12 @@ The Ant System implementation is stable and conceptually clear, but in the teste
 
 Simulated Annealing is a strong baseline for TSP because the 2-opt neighbourhood and probabilistic acceptance mechanism allow it to escape poor local optima. It obtained the best result on the smallest instance and remained competitive on the larger ones, but its performance depends on the temperature schedule and the length of the trajectory.
 
-The Bees Algorithm produced the best overall balance in the conducted experiments. The combination of nearest-neighbour initialization, selected-site neighbourhood search and scout exploration gave low RPD values, low variance and short execution times. Its strongest results were obtained on `eil101` and `a280`, where it achieved the best best-result RPD among the three algorithms.
+The Bees Algorithm produced the best overall balance in the conducted experiments. The combination of nearest-neighbour initialization, selected-site neighbourhood search and scout exploration gave low RPD values, low variance and short execution times. Its strongest results were obtained on `a280`, where it achieved the best best-result RPD among the three algorithms.
 
 The most important practical conclusion is that the neighbourhood operator and initialization strategy are crucial for TSP metaheuristics. Random permutations alone are too weak as starting points for larger instances, while 2-opt-based neighbourhood moves provide meaningful improvements by restructuring route segments. For future work, the Bees Algorithm could be further improved by automatic hyperparameter tuning, adaptive neighbourhood sizes, a stagnation-based stopping criterion, or a final deterministic 2-opt polishing phase applied to the best solution found.
 
+---
 
+### 9. Repository
+
+* [Github repository](https://github.com/dubajstan/metaheuristics-project/blob/Bees_Algorithm/src/algorithms/BA.py)
