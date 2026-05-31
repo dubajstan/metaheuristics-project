@@ -267,3 +267,104 @@ The most important plot for comparison is the convergence over function evaluati
 
 ---
 
+## 4. Experiments
+
+### 4.1 Selected instances
+
+The experiments were conducted on three TSP instances of varying sizes. The tsplib95 library was utilized to obtain the problem instance files along with their optimal solutions, which were used to verify the effectiveness of the metaheuristics. 
+
+**The three selected problems were**: 
+* att48 (48 cities)
+* eil101 (101 cities)
+* and a280 (280 cities)
+
+ To evaluate the algorithms, tests were performed by executing them 10 times on each of the selected instances. Furthermore, to ensure an accurate comparison of execution times, all tests were conducted on the same computer.
+
+### 4.2 Relative Percentage Deviation (RPD) Metric
+
+Alongside values such as execution time and minimum costs, the Relative Percentage Deviation (RPD) metric was utilized in the presentation of the experimental results. This metric enables a more effective comparison of experimental results across different problem instances
+
+$$
+\text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
+$$
+
+Where $F_{\text{best}}$ is the best cost found by the algorithm and $F_{\text{opt}}$ is the known optimal cost for the given instance.
+
+### 4.3 Stopping Criterions
+
+The selected algorithms differ significantly from each other, making it impossible to apply a single, universal stopping criterion.
+
+**Ant System** - the maximum number of cycles without improvement was set to 75, with a limit of 16 000 allowed cost function evaluations.
+
+---
+
+## 5. Obtained Comparative results
+
+### 5.1 Results for att48 instance
+
+Optimal cost: 10628.0
+
+| Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Ant System` | 10965.0 | 3.17% | 11225.8 | 5.62% | 3.06 | 1.36%|
+| `Simulated Annealing` | 10648.0 | 0.19 | 10831.8 | 1.92% | 1.27 | 0.83%|
+| `Bees Algorithm` | - | - | - | - | - | - |
+
+
+### 5.2 Results for eil101 instance
+
+Optimal cost: 629.0
+
+| Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Ant System` | 671.0 | 6.68% | 684.2 | 8.78% | 12.61 | 1.25%|
+| `Simulated Annealing` | 658.0 | 4.61% | 666.8 | 6.01% | 2.47 | 1.09%|
+| `Bees Algorithm` | - | - | - | - | - | - |
+
+
+### 5.3 Results for a280 instance
+
+Optimal cost: 2579.0
+
+| Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `Ant System` | 2964.0 | 14.93% | 2991.2 | 15.98% | 55.51 | 0.65 %|
+| `Simulated Annealing` | 2768.0 | 7.32% | 2883.2 | 11.79% | 7.50 | 2.19 %|
+| `Bees Algorithm` | - | - | - | - | - | - |
+
+---
+
+## 6. Individual Results and Conclusions
+
+### 6.1 Ant system
+
+The implemented Ant System, being the simplest variant of this algorithm, does not find optimal solutions. For the smaller tested instances, its results can be considered satisfactory. However, for the a280 instance, the best solution was noticeably worse—the lowest RPD reached as high as 15.98%.
+
+The Ant System is stable - the best solutions it finds has a low standard deviation of the RPD. The execution time of the algorithm increases noticeably with the size of the optimized instance.
+
+The algorithm finds solutions close to its final result in the first few to a dozen cycles. Therefore, the execution could be terminated much earlier by modifying the stopping criterion and accepting a near-final solution. Conversely, the algorithm could also be allowed to run longer. The standard deviation of the route costs among individual agents remains positive and varied over cycles, which indicates that the ants have not yet converged to a single path.
+
+The following charts present the results for a single optimization run of the eil101 problem.
+
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="./images/as_eil101_cost.png" alt="Optimization cost chart for AS on eil101" width="700" />
+      <br />
+      <em>Figure 1: Optimization route cost for Ant System on eil101 instance.</em>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="./images/as_eil101_std_dev.png" alt="Standard deviation chart for AS on eil101" width="700" />
+      <br />
+      <em>Figure 2: Standard deviation of agents route costs for Ant System on eil101 instance.</em>
+    </td>
+  </tr>
+</table>
+
+## 7. Algorithm Comparison
+
+
