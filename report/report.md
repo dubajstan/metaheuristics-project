@@ -307,8 +307,8 @@ Optimal cost: 10628.0
 | Algorithm | Best result | Best RPD | Avg result | Avg RPD | Avg exec time | Avg RPD std dev |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 10965.0 | 3.17% | 11225.8 | 5.62% | 3.06 | 1.36%|
-| `Simulated Annealing` | 10648.0 | 0.19 | 10831.8 | 1.92% | 1.27 | 0.83%|
-| `Bees Algorithm` | - | - | - | - | - | - |
+| `Simulated Annealing` | 10648.0 | 0.19% | 10831.8 | 1.92% | 1.27 | 0.83%|
+| `Bees Algorithm` | 10711.0 | 0.78% | 10857.0 | 2.15% | 2.57 | 1.15% |
 
 
 ### 5.2 Results for eil101 instance
@@ -319,7 +319,7 @@ Optimal cost: 629.0
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 671.0 | 6.68% | 684.2 | 8.78% | 12.61 | 1.25%|
 | `Simulated Annealing` | 658.0 | 4.61% | 666.8 | 6.01% | 2.47 | 1.09%|
-| `Bees Algorithm` | - | - | - | - | - | - |
+| `Bees Algorithm` | 647.0 | 2.86% | 654.8 | 4.10% | 3.14 | 0.77% |
 
 
 ### 5.3 Results for a280 instance
@@ -330,7 +330,7 @@ Optimal cost: 2579.0
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `Ant System` | 2964.0 | 14.93% | 2991.2 | 15.98% | 55.51 | 0.65 %|
 | `Simulated Annealing` | 2768.0 | 7.32% | 2883.2 | 11.79% | 7.50 | 2.19 %|
-| `Bees Algorithm` | - | - | - | - | - | - |
+| `Bees Algorithm` | 2719.0 | 5.43% | 2770.0 | 7.41% | 3.39 | 0.76% |
 
 ---
 
@@ -364,6 +364,10 @@ The following charts present the results for a single optimization run of the ei
     </td>
   </tr>
 </table>
+
+### 6.2 Simulated annealing
+
+
 
 ## 7. Algorithm Comparison
 
