@@ -267,3 +267,29 @@ The most important plot for comparison is the convergence over function evaluati
 
 ---
 
+## 4. Experiments
+
+### 4.1 Selected instances
+
+The experiments were conducted on three TSP instances of varying sizes. The tsplib95 library was utilized to obtain the problem instance files along with their optimal solutions, which were used to verify the effectiveness of the metaheuristics. 
+
+**The three selected problems were**: 
+* att48 (48 cities)
+* eil101 (101 cities)
+* and a280 (280 cities)
+
+ To evaluate the algorithms, tests were performed by executing them 10 times on each of the selected instances. Furthermore, to ensure an accurate comparison of execution times, all tests were conducted on the same computer.
+
+### 4.2 Relative Percentage Deviation (RPD) Metric
+
+Alongside values such as execution time and minimum costs, the Relative Percentage Deviation (RPD) metric was utilized in the presentation of the experimental results. This metric enables a more effective comparison of experimental results across different problem instances
+
+$$
+\text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
+$$
+
+Where $F_{\text{best}}$ is the best cost found by the algorithm and $F_{\text{opt}}$ is the known optimal cost for the given instance.
+
+---
+
+## 5. Obtained results
