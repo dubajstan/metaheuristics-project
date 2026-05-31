@@ -178,5 +178,92 @@ The hyperparameters will be optimized using *[Optuna](https://optuna.org/)*.
 
 ### 3.3 Bees Algorithm
 
+The Bees Algorithm (BA) is a population-based metaheuristic inspired by the food foraging behaviour of honey bees. It was introduced by D. T. Pham, A. Ghanbarzadeh, E. Koc, S. Otri, S. Rahim and M. Zaidi in the paper *[The Bees Algorithm - A Novel Tool for Complex Optimisation Problems](https://beesalgorithmsite.altervista.org/2006_-_The_Bees_Algorithm_A_Novel_Tool_for_Complex_Optimisation_Problems.pdf)*. The algorithm combines neighbourhood search around promising solutions with random exploration of new areas of the search space.
+
+In the natural metaphor, scout bees search for food sources. The best discovered flower patches attract more recruited bees, while weaker patches receive fewer bees. At the same time, some scouts continue exploring randomly, which helps the colony avoid premature convergence. In the TSP context, a flower patch corresponds to a candidate tour, and the nectar amount is represented by the inverse quality of the tour cost. Since the objective is to minimize total route distance, lower cost means a better site.
+
+The implementation examined in this report follows this population-based structure. First, an initial population of valid TSP tours is generated. In order to avoid spending a large part of the evaluation budget on very poor random permutations, part of the initial population is constructed with the nearest-neighbour heuristic. The algorithm evaluates nearest-neighbour tours started from different cities and keeps the best constructed tours as initial promising sites. The remaining sites are generated randomly by scout bees. Every tour is evaluated using the common `Problem.evaluate()` interface, which also updates the global function evaluation counter.
+
+In every cycle the population is sorted by cost, the best sites are selected, and additional neighbourhood search is performed around them. Elite sites receive more recruited bees than the remaining selected sites. When an improving neighbour is found, the local search continues from that improved tour, which makes the recruited bees perform a short greedy intensification around a promising site. The rest of the next population is completed by randomly generated scout bees.
+
+The stopping criterion is the maximum number of cost function evaluations. Therefore, the algorithm does not stop after a fixed number of cycles. Instead, before every call to the objective function, the implementation checks whether the allowed number of evaluations has already been exhausted. This includes the nearest-neighbour initialization phase, so the constructive starts do not bypass the common evaluation budget. This makes the Bees Algorithm directly comparable with Ant Colony Optimization and Simulated Annealing implementations used in this project.
+
+The main components of the implementation are:
+
+* **Site / Solution:** A permutation of all cities representing a valid TSP tour.
+* **Fitness / Cost:** The total route distance calculated by $F(\pi)$. Lower cost corresponds to a better food source.
+* **Selected sites:** The best solutions chosen from the current population for neighbourhood search.
+* **Elite sites:** The highest quality selected sites, explored with the largest number of recruited bees.
+* **Scout bees:** Randomly generated solutions used to preserve exploration.
+* **Constructive initial sites:** Nearest-neighbour tours used to start the population from more promising regions of the search space.
+
+#### Neighbourhood operator
+
+Two neighbourhood operators are supported by the implementation:
+
+* **Swap operator:** Interchanges the positions of two randomly selected cities in the permutation.
+* **2-opt operator:** Selects two positions in the tour and reverses the sub-route between them.
+
+The 2-opt operator was selected as the default operator because it is better suited to TSP instances. Reversing a segment of the route can remove crossing edges and often produces much stronger improvements than a simple swap. In this project, `TSPProblem.get_neighbour()` provides a stochastic 2-opt move, while `TSPProblem.get_neighbour_swap()` keeps the swap-based operator for comparison. The Bees Algorithm uses these shared operators without modifying the common TSP problem implementation.
+
+#### Hyperparameters
+
+The hyperparameters of the Bees Algorithm used in the implementation are:
+
+* $n$ - The total number of bees in the population (`n_bees`).
+* $n_{elite}$ - The number of best selected sites treated as elite sites (`n_elite`).
+* $n_{best}$ - The total number of selected sites used for neighbourhood search (`n_best`).
+* $r_{elite}$ - The number of recruited bees assigned to every elite site (`elite_neigh`).
+* $r_{best}$ - The number of recruited bees assigned to every non-elite selected site (`best_neigh`).
+* $d$ - The number of neighbourhood moves applied when creating a neighbouring solution (`neighbourhood_depth`).
+* $O$ - The selected neighbourhood operator, either 2-opt or swap (`neighbourhood_type`).
+* $g$ - The number of constructive nearest-neighbour tours retained in the initial population (`greedy_initial_sites`).
+* $s$ - The number of start cities tested during constructive initialization (`greedy_start_candidates`). In the performed experiments, all start cities were tested.
+* $k$ - The candidate list size used by the nearest-neighbour construction (`greedy_candidate_list_size`).
+
+For the performed experiments, the following configuration was used:
+
+* $n = 12$
+* $n_{elite} = 2$
+* $n_{best} = 4$
+* $r_{elite} = 900$
+* $r_{best} = 220$
+* $d = 1$
+* $O = 2\text{-opt}$
+* $g = 4$
+* $s =$ all cities in the instance
+* $k = 1$
+* cost function evaluation limit: `50000`
+
+#### Results
+
+The algorithm was tested on three TSPLIB instances included in the repository: `att48`, `eil101` and `a280`. For every instance, 10 independent runs were performed with a limit of `50000` function evaluations. The known optimal tours were loaded from the `.opt.tour` files and evaluated with the same distance matrix as the tested solutions.
+
+$$
+\text{RPD} = \frac{F_{\text{best}} - F_{\text{opt}}}{F_{\text{opt}}} \cdot 100\%
+$$
+
+Where $F_{\text{best}}$ is the best cost found by the algorithm and $F_{\text{opt}}$ is the known optimal cost for the given instance.
+The obtained results were:
+
+| Instance | Optimum | Best result | Best RPD | Average result | Average RPD |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `att48` | 10628 | 10711 | 0.78% | 10857.0 | 2.15% |
+| `eil101` | 629 | 647 | 2.86% | 655.5 | 4.21% |
+| `a280` | 2579 | 2763 | 7.13% | 2815.7 | 9.18% |
+
+The strongest result on the main `a280` instance was `2763`, which corresponds to a `7.13%` gap to the known optimum `2579`. The average result across 10 runs was `2815.7`, with an average relative percentage deviation of `9.18%`. This is a significant improvement over a purely random initial population, because the nearest-neighbour construction gives the algorithm good starting sites before the recruited bees begin local refinement.
+
+The results remain slightly worse than the best Simulated Annealing runs, but the gap is expected. Simulated Annealing follows one solution trajectory and can spend almost the whole budget on repeatedly improving a single tour. The Bees Algorithm divides the same evaluation limit between constructive scouts, several selected sites, elite neighbourhood searches, non-elite neighbourhood searches and random scouts. This produces stronger exploration and stable behaviour across runs, but each individual tour receives fewer local improvement attempts than in a single-state method.
+
+The execution history is stored by the optimizer and processed by the Bees pipeline script. It generates JSON summaries and plots of:
+
+* best cost over cycles,
+* average population cost,
+* cost standard deviation,
+* best cost over the number of function evaluations.
+
+The most important plot for comparison is the convergence over function evaluations, because the stopping criterion is based on the number of calls to the objective function.
+
 ---
 
