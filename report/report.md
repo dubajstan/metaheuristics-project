@@ -368,7 +368,74 @@ The following charts present the results for a single optimization run of the ei
 ### 6.2 Simulated annealing
 
 
+### 6.3 Bees Algorithm
+
+The final Bees Algorithm implementation finds valid TSP tours and consistently improves the quality of the initial population. The algorithm does not attempt to solve the problem exactly; instead, it combines constructive initialization, population-based selection and local 2-opt exploration. The constructive nearest-neighbour phase is important because it prevents the initial population from being dominated by very poor random tours. These constructed tours are still evaluated through the same objective function as every other solution, so they are included in the function evaluation budget.
+
+The obtained results can be considered strong for a relatively simple population-based implementation. For `att48`, the best RPD was `0.78%`, which is very close to the known optimum. For `eil101`, the Bees Algorithm obtained the best result among all three compared algorithms, with a best RPD of `2.86%` and an average RPD of `4.21%`. For the largest `a280` instance, the best result was `2763`, which gives a `7.13%` gap to the optimum `2579`. The average RPD on `a280` was `9.18%`, which is also better than the average result obtained by Simulated Annealing in the performed experiments.
+
+The standard deviation of the RPD remains low for all tested instances: `1.15%` for `att48`, `0.82%` for `eil101` and `0.89%` for `a280`. This indicates that the final configuration is stable and does not rely on a single lucky run. The execution time also scales favourably with the instance size. Even for `a280`, the average execution time was `2.77` seconds, which is much lower than the Ant System execution time and lower than the average time of Simulated Annealing in the comparative experiment.
+
+The following charts present the results for the Bees Algorithm. The `eil101` instance is shown to keep the presentation consistent with the Ant System example above.
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="../plots/eil101/eil101_01_convergence.png" alt="Convergence chart for Bees Algorithm on eil101" width="700" />
+      <br />
+      <em>Figure 3: Best cost convergence for Bees Algorithm on eil101 across independent runs.</em>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="../plots/eil101/eil101_02_population_average.png" alt="Average population cost chart for Bees Algorithm on eil101" width="700" />
+      <br />
+      <em>Figure 4: Average population cost and best cost for the best Bees Algorithm run on eil101.</em>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="../plots/eil101/eil101_03_population_std.png" alt="Population standard deviation chart for Bees Algorithm on eil101" width="700" />
+      <br />
+      <em>Figure 5: Population cost standard deviation for the best Bees Algorithm run on eil101.</em>
+    </td>
+  </tr>
+</table>
+
+The convergence plot confirms that the algorithm quickly moves from the constructive and random initial population to significantly shorter tours. The strongest improvements usually occur during the first part of the run, when recruited bees intensively explore the neighbourhoods of the best selected sites. Later improvements become smaller, which is expected for a local-search-oriented metaheuristic operating close to a local optimum.
+
+The average population cost plot shows the relation between exploitation and exploration. The best cost decreases monotonically because the algorithm stores the best solution found so far. The average population cost remains higher than the best cost, because the population still contains weaker scout solutions and non-elite sites. This is desirable: if the average population cost became almost identical to the best cost, it would indicate premature convergence and loss of exploration.
+
+The standard deviation plot confirms that the population does not collapse into a single identical route. The standard deviation remains positive throughout the run, which means that the algorithm maintains diversity between candidate tours. This diversity is useful because it allows the algorithm to continue sampling different regions of the search space instead of repeatedly improving only one solution.
 
 ## 7. Algorithm Comparison
+
+The three algorithms represent different search strategies. Ant System is a constructive population algorithm based on pheromone trails. Simulated Annealing is a single-solution trajectory method controlled by temperature and probabilistic acceptance of worse moves. Bees Algorithm is a population-based local search method that combines scout exploration with intensified search around the best selected sites. Because of these structural differences, the comparison should consider not only the final cost, but also stability, execution time, scalability and how the evaluation budget is spent.
+
+In terms of solution quality, Simulated Annealing and Bees Algorithm clearly outperform the basic Ant System implementation on the tested instances. On `att48`, Simulated Annealing achieved the best result (`0.19%` RPD), while Bees Algorithm was very close (`0.78%` RPD). Ant System was weaker on this instance, with a best RPD of `3.17%`. On `eil101`, Bees Algorithm obtained the best result (`2.86%` RPD), followed by Simulated Annealing (`4.61%`) and Ant System (`6.68%`). On `a280`, Bees Algorithm again achieved the best result in this experiment (`7.13%` RPD), slightly ahead of Simulated Annealing (`7.32%`) and clearly ahead of Ant System (`14.93%`).
+
+The average results lead to the same general conclusion. Bees Algorithm had the best average RPD on `eil101` and `a280`, while Simulated Annealing had the best average RPD on `att48`. This suggests that the constructive nearest-neighbour initialization and intensive 2-opt exploitation used by Bees Algorithm become especially useful as the instance size increases. Ant System remained the weakest in terms of solution quality, especially for the largest instance, which is expected for a simple ant-cycle implementation without additional local improvement.
+
+Stability is also important. Ant System had the lowest RPD standard deviation on `a280` (`0.65%`), but this stability came with consistently worse solutions. Bees Algorithm combined strong solution quality with low variance: its RPD standard deviation was below `1.2%` for all tested instances. Simulated Annealing was very strong, but its variance increased on the largest instance (`2.19%` RPD standard deviation), which indicates higher sensitivity to the stochastic trajectory and cooling process.
+
+Execution time shows the clearest practical difference. Ant System required the most time, especially on `a280`, where the average execution time was `55.51` seconds. This is caused by repeatedly constructing full tours for many ants and updating pheromone information. Simulated Annealing was much faster than Ant System, but it still used a larger number of function evaluations on average due to its long single-trajectory search and stagnation criterion. Bees Algorithm was the fastest on the largest instance in the performed tests, with an average time of `2.77` seconds for `a280`, while still obtaining the best average RPD.
+
+The evaluation budget also affects the interpretation of the comparison. The algorithms do not use identical stopping criteria: Ant System used a limit of 16 000 function evaluations and a stagnation condition, Simulated Annealing used a much higher maximum limit with an additional stagnation criterion, and Bees Algorithm used a fixed limit of 50 000 evaluations. Therefore, the comparison is not a proof that one algorithm is universally superior. It shows how the implemented variants behave under the chosen experimental setup. Under these conditions, Bees Algorithm offers the best compromise between solution quality, runtime and repeatability.
+
+The plots support these conclusions. Ant System quickly reaches a near-final result and then changes only slightly, which suggests early stagnation. Simulated Annealing benefits from a longer trajectory and probabilistic acceptance, making it strong on small and medium instances. Bees Algorithm improves rapidly after initialization and keeps population diversity during the run, which helps it avoid complete premature convergence while still exploiting good routes intensively.
+
+## 8. Final Conclusions
+
+All three implemented metaheuristics are capable of producing valid TSP tours and improving them over time, but their practical behaviour differs significantly.
+
+The Ant System implementation is stable and conceptually clear, but in the tested configuration it produces weaker solutions and has the highest execution time, especially for larger instances. Its main limitation is the lack of additional local route improvement after constructing tours.
+
+Simulated Annealing is a strong baseline for TSP because the 2-opt neighbourhood and probabilistic acceptance mechanism allow it to escape poor local optima. It obtained the best result on the smallest instance and remained competitive on the larger ones, but its performance depends on the temperature schedule and the length of the trajectory.
+
+The Bees Algorithm produced the best overall balance in the conducted experiments. The combination of nearest-neighbour initialization, selected-site neighbourhood search and scout exploration gave low RPD values, low variance and short execution times. Its strongest results were obtained on `eil101` and `a280`, where it achieved the best best-result RPD among the three algorithms.
+
+The most important practical conclusion is that the neighbourhood operator and initialization strategy are crucial for TSP metaheuristics. Random permutations alone are too weak as starting points for larger instances, while 2-opt-based neighbourhood moves provide meaningful improvements by restructuring route segments. For future work, the Bees Algorithm could be further improved by automatic hyperparameter tuning, adaptive neighbourhood sizes, a stagnation-based stopping criterion, or a final deterministic 2-opt polishing phase applied to the best solution found.
 
 
