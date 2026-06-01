@@ -122,7 +122,7 @@ The algorithm is inspired by metallurgy, where a material is heated to a high te
 * **Energy:** The value of the objective function (F(π)) evaluated at a given state. Because the objective is to minimize total distance, lower energy corresponds to a better solution.
 * **Temperature (T):** A global control parameter that dictates the degree of randomness in the search space exploration.
 
-#### The Metropolic Acceptance criterion
+#### The Metropolis Acceptance criterion
 
 The defining feature of Simulated Annealing is its ability to escape local optima by accepting worse solutions based on a probabilistic threshold, preventing the algorithm from stalling like a purely greedy hill-climber.
 
@@ -346,7 +346,7 @@ The implemented Simulated Annealing (SA) algorithm, enhanced by a 2-opt operator
 
 Experiments clearly indicate that despite its simplicity and single-state nature—relying on the trajectory of a single solution rather than evolving a population—Simulated Annealing can effectively compete with more complex metaheuristics. A critical factor in this capability was discarding the basic Swap operator in favor of the 2-opt move. The 2-opt operator generates a significantly less rugged fitness landscape, making it easier to systematically eliminate crossing edges. This approach is exceptionally well-suited for scenarios where the objective function is computationally cheap, as SA requires a high number of iterations to systematically cool the system and reach convergence.
 
-The integration of Adaptive Initial Temperature Estimation paired with a finely tuned Geometric Cooling Rate (α) was a decisive factor in stabilizing the algorithm and maximizing its solution quality across varying instance sizes. Based on the low standard deviation (<3%) among all experiments, we can say that SA is stable, but the least stable in comparison to the other algorithms.
+The integration of Adaptive Initial Temperature Estimation paired with a finely tuned Geometric Cooling Rate (α) was a decisive factor in stabilizing the algorithm and maximizing its solution quality across varying instance sizes. Based on the low standard deviation (< 3%) among all experiments, we can say that SA is stable, but the least stable in comparison to the other algorithms.
 
 Potential for Early Termination in Large Instances (`a280`): An analysis of the convergence trajectory for the `a280` instance reveals that the vast majority of the cost reduction occurs rapidly during the early and middle stages of the cooling cycle. Once the algorithm enters the lower temperature zones, the optimization curve flattens significantly, spending a considerable portion of the evaluation budget on minor, marginal refinements. This implies that for large-scale instances, the execution could be terminated much earlier—either by implementing much faster stagnation threshold.
 
